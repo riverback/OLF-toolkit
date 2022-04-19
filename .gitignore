@@ -1,0 +1,8 @@
+*.npz
+*.pth
+*.png
+*.jpg
+*.zip
+*.dcm
+CAMRESULTS/*
+CALSSIFICATIONRESULTS/*
