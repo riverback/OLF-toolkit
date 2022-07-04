@@ -2,9 +2,13 @@
 *.pth
 *.png
 *.jpg
+*.jpeg
 *.zip
+*.nii
+*.gz
+*.tgz
 *.dcm
-CAMRESULTS
-CLASSIFICATIONRESULTS
-CAMRESULTS/*
-CLASSIFICATIONRESULTS/*
+*.pyc
+results/*
+vis/*
+preparation.md
