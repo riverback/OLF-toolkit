@@ -47,10 +47,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # path
-    parser.add_argument('--volume_path', type=str, default=r'C:\ZhuangResearchCode\OLF_TASK\Data\GT\002\Label.nii.gz',
+    parser.add_argument('--volume_path', type=str, default=r'..\Data\GT\002\Label.nii.gz',
                         help='xxxlabel.nii.gz is required')
     parser.add_argument('--output_folder', type=str,
-                        default=r'C:\ZhuangResearchCode\OLF_TASK\Data_Seg_OLF\002\vis_GT', help='the folder to save png label')
+                        default=r'..\Data_Seg_OLF\002\vis_GT', help='the folder to save png label')
 
     config = parser.parse_args()
 
