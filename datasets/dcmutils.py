@@ -75,7 +75,7 @@ def ReadDcmSequencePydicom(dcm_folder, norm=True):
     hu_scans = get_pixels_hu(scans)
     if norm == True:
         hu_scans = normalize_minmax(hu_scans)
-        hu_scans = 255 * hu_scans
+        # hu_scans = 255 * hu_scans
 
     hu_scans = np.transpose(hu_scans, (2, 1, 0))
     slices = [np.rot90(np.flip(hu_scans[idx, :, :], axis=1), 1)
@@ -99,6 +99,6 @@ if __name__ == '__main__':
     data_folder = r'Data\RAW\002'
 
     arr = np.array(ReadDcmSequencePydicom(data_folder))
-    np.save(ospj(r'C:\ZhuangResearchCode\OLF_TASK\Data\RAW', '002'), arr)
+    np.save(ospj(r'C:\ZhuangResearchCode\OLF_TASK\Data\RAW\npydata', '002'), arr)
 
     print("hello-world")
