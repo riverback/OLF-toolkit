@@ -96,15 +96,9 @@ __all__ = [ReadImageSequenceSitk]
 
 
 if __name__ == '__main__':
-    data_folder = r'Data\RAW\001'
+    data_folder = r'Data\RAW\002'
 
-    # test for Sitk
-    # data = ReadImageSequenceSitk(data_folder)
-    # now: slice <--> label
-
-    # test for pydicom
-    # scans = load_scan(data_folder)
-
-    arr = ReadDcmSequencePydicom(data_folder)  # shape -> (601, 512, 512)
+    arr = np.array(ReadDcmSequencePydicom(data_folder))
+    np.save(ospj(r'C:\ZhuangResearchCode\OLF_TASK\Data\RAW', '002'), arr)
 
     print("hello-world")
