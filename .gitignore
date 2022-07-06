@@ -1,6 +1,6 @@
 *.npz
 *.pth
-*.png
+
 *.jpg
 *.jpeg
 *.zip
@@ -17,7 +17,8 @@ Data
 */__pycache__
 __pycache__
 .idea
-vis/*
+vis
 Data_Seg_OLF/*
+Data_Seg_OLF
 .vscode
 .vscode/*
