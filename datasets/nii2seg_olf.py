@@ -24,7 +24,7 @@ def nii2seg_olf_label(config):
     
     volume_data = np.flip(volume_data, 2)
     
-    volume_data[volume_data > 0.] = 1
+    volume_data[volume_data > 0.] = 255
     
     l, w, h = volume_data.shape
     
@@ -47,21 +47,32 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # path
-    parser.add_argument('--volume_path', type=str, default=r'Label.nii.gz',
+    parser.add_argument('--volume_path', type=str, default=r'C:\ZhuangResearchCode\OLF_TASK\Data\GT\002\Label.nii.gz',
                         help='xxxlabel.nii.gz is required')
     parser.add_argument('--output_folder', type=str,
-                        default=r'', help='the folder to save png label')
+                        default=r'C:\ZhuangResearchCode\OLF_TASK\Data_Seg_OLF\002\vis_GT', help='the folder to save png label')
 
     config = parser.parse_args()
 
     print(config)
 
-    GT = np.array(nii2seg_olf_label(config))
+    # GT = np.array(nii2seg_olf_label(config))
 
-    print(GT.shape) #(512, 601, 512) 第一个512是512份数据 
+    # print(GT.shape) #(512, 601, 512) 第一个512是512份数据 
 
-    output_path = ospj(config.output_folder, 'Label_seg_olf')
+    # output_path = ospj(config.output_folder, 'Label_seg_olf')
     
-    np.save(output_path, GT)
+    # np.save(output_path, GT)
+
+
+
+    ### 查看含有骨化块的切边编号并记录 用于训练分割模型
+    ### 用这部分代码的时候记得把上面的 volume_data[volume_data > 0.] = xxx 的xxx改成255
+    GT = nii2seg_olf_label(config)
+
+    for i in range(len(GT)):
+        cv2.imwrite(ospj(config.output_folder, f'{i}.png'), GT[i])
 
     print('break-point')
+    
+    
