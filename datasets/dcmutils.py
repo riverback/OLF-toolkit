@@ -96,9 +96,9 @@ __all__ = [ReadImageSequenceSitk]
 
 
 if __name__ == '__main__':
-    data_folder = r'Data\RAW\002'
+    data_folder = r'..\Data\RAW\002'
 
     arr = np.array(ReadDcmSequencePydicom(data_folder))
-    np.save(ospj(r'C:\ZhuangResearchCode\OLF_TASK\Data\RAW\npydata', '002'), arr)
+    np.save(ospj(r'..\Data\RAW\npydata', '002'), arr)
 
     print("hello-world")
