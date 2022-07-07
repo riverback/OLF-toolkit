@@ -36,7 +36,7 @@ class U_Net(nn.Module):
     def __init__(self, config):
         super(U_Net, self).__init__()
         
-        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.Maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
         
         self.Conv1 = conv_block(ch_in=config.image_channels, ch_out=64)
         self.Conv2 = conv_block(ch_in=64, ch_out=128)
