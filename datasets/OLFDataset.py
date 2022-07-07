@@ -10,7 +10,7 @@ import SimpleITK as sitk
 import random
 
 
-from seg_olf_slice_info import OLF_SLICE
+from datasets.seg_olf_slice_info import OLF_SLICE
 
 
 class OLFDataset(data.Dataset):
@@ -60,34 +60,45 @@ class OLFDataset(data.Dataset):
         
         
     def __getitem__(self, index):
+        p_transform = random.random()
+        
         
         image, label = self.DataPackage[index]
+        '''
+        if p_transform > 0.3:
+            image = image * 0.6 + 0.2 # 0.6 is the contrast_factor, 0.2 is the brighness_factor
+        '''    
+            
         image, label = Image.fromarray(image), Image.fromarray(label)
-        
-        
+            
         aspect_ratio = image.size[1] / image.size[0]
         
         Transform = []
     
         """Resize"""
-        ResizeRange = random.randint(400, max(image.shape))
+        ResizeRange = random.randint(400, max(image.size))
         Transform.append(
             T.Resize((int(ResizeRange * aspect_ratio), ResizeRange)))
         
         """Random Data Augmentation"""
-        p_transform = random.random()
-        if self.mode == 'train' and p_transform <= self.aug_prob:
+        
+        if self.mode == 'train' and p_transform >= self.aug_prob:
             """Rotation"""
             RotationDegree = self.RotationDegree[random.randint(0, 3)]
             if RotationDegree == 90 or RotationDegree == 270:
                 aspect_ratio = 1 / aspect_ratio
-            RotationRange = random.randint(-15, 15)
+            RotationRange = random.randint(-10, 10)
             Transform.append(T.RandomRotation((RotationDegree, RotationDegree)))
             Transform.append(T.RandomRotation((RotationRange, RotationRange)))
 
+            Transform = T.Compose(Transform)
+            image, label = Transform(image), Transform(label)
+            Transform = []
+            
             """Crop"""
-            CropRange = random.randint(480, 540)
-            Transform.append(T.RandomCrop((int(CropRange*aspect_ratio), CropRange)))
+            CropRange = random.randint(440, 480)
+            if CropRange < image.size[0] and int(CropRange*aspect_ratio) < image.size[1]:
+                Transform.append(T.RandomCrop((int(CropRange*aspect_ratio), CropRange), padding=0))
             
             Transform = T.Compose(Transform)
             image, label = Transform(image), Transform(label)
@@ -102,8 +113,9 @@ class OLFDataset(data.Dataset):
             label = label.crop(box=(ShiftRange_left, ShiftRange_upper, ShiftRange_right, ShiftRange_lower))
             
             """Color Jetter"""
-            Transform = T.ColorJitter(brightness=0.2, contrast=0.2, hue=0.02) # hue 色调
-            image = Transform(image)
+            # Color Jetter cannot apply on one channel image
+            '''Transform = T.ColorJitter(brightness=0.2, contrast=0.2, hue=0.02) # hue 色调
+            image = Transform(image)'''
             
             Transform = []
         
@@ -115,9 +127,9 @@ class OLFDataset(data.Dataset):
         image, label = Transform(image), Transform(label)
         
         """Normalize"""
-        if self.config.normalize == True:
+        '''if self.config.normalize == True:
             Norm = T.Normalize(mean=self.mean, std=self.std)
-            image = Norm(image)
+            image = Norm(image)'''
         
         return image, label
         
