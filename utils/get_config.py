@@ -7,22 +7,24 @@ def getConfig():
     parser = argparse.ArgumentParser()
     
     # Environment
-    parser.add_argument('--cuda_idx', type=str, default='7',
+    parser.add_argument('--cuda_idx', type=str, default='0',
                         help='multi-gpu: "1,2" ')
     parser.add_argument('--seed', type=int, default=10,
                         help='')
     
     # Path
-    parser.add_argument('--olf_root', type=str, required=True,
+    parser.add_argument('--olf_root', type=str, default=r'C:\ZhuangResearchCode\OLF_TASK\Data',
                         help='path for olf-data root')
-    parser.add_argument('--experiment_name', type=str, default='Debug',
+    parser.add_argument('--experiment_name', type=str, default='First_Try',
                         help='name for experiment log')
     
     # DataSet and DataLoader
     parser.add_argument('--task', type=str, default='olf-seg-only',
                         help='[olf-seg-only, ]')
-    parser.add_argument('--batch_size', type=int, default=8, help='batch_size')
-    parser.add_argument('--num_workers', type=int, default=16, help='num_workers')
+    parser.add_argument('--batch_size', type=int, default=2, help='batch_size')
+    parser.add_argument('--num_workers', type=int, default=4, help='num_workers')
+    parser.add_argument('--mode', type=str, default='train',
+                        help='')
     
     # Basic Model Hyperparameters
     parser.add_argument('--image_channels', type=int, default=1, 
@@ -31,7 +33,7 @@ def getConfig():
                         help='olf-seg-only=1, olf-do-seg=2')
     
     # Traing Parameter Settings
-    parser.add_argument('--num_epochs', type=int, default=40, 
+    parser.add_argument('--num_epochs', type=int, default=20, 
                         help='')
     parser.add_argument('--lr', type=float, default=0.001, 
                         help='learning rate')
