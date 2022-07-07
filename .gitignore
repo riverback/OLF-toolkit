@@ -1,6 +1,6 @@
 *.npz
 *.pth
-
+*.tar
 *.jpg
 *.jpeg
 *.zip
@@ -10,6 +10,7 @@
 *.dcm
 *.pyc
 results/*
+experiments/*
 vis/*
 preparation.md
 Data/*
