@@ -3,10 +3,10 @@ import torch.nn as nn
 import os
 import os.path as op
 import sys
-
+import time
 from utils.Logger import Logger
 from utils.get_config import getConfig
-from utils.pyutils import dumpclean, set_seed, print_metrics
+from utils.pyutils import dumpclean, set_seed, print_metrics, print_config
 from model.build_model import build_model
 from datasets.dataloader import get_loader
 from metrics.losses.loss_function import FocalLoss, BCEFocalLoss
@@ -35,7 +35,8 @@ class Trainer(object):
         
         
         # Print Config
-        dumpclean(self.config)
+        print("Experiment: {}\nTime: {}".format(self.config.experiment_name, time.ctime()))
+        print_config(self.config)
         
         set_seed(self.config.seed)
         
@@ -50,7 +51,9 @@ class Trainer(object):
         self.num_epochs_decay = self.config.num_epochs_decay
         
         # Set Model
-        self.net, self.param_list = self._set_model()
+        self.net = self._set_model()
+        self.param_list = self.net.parameters()
+        self.net.to(self.device)
         
         # Set Optimizer
         self.optimizer = torch.optim.Adam(
@@ -76,8 +79,7 @@ class Trainer(object):
         
     def _set_model(self):
         net = build_model(self.config)
-        param_list = list(self.net.parameters())
-        return net, param_list
+        return net
     
     
     def _set_lr_Scheduler(self):
@@ -87,9 +89,9 @@ class Trainer(object):
         elif self.config.lr_Scheduler == 'CosineAnnealingLR':
             Scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=20, verbose=True)
         elif self.config.lr_Scheduler == 'ExponentialLR':
-            Scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
+            Scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9, verbose=True)
         elif self.config.lr_Scheduler == 'MultiStepLR':
-            Scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[30,80], gamma=0.1)
+            Scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[30,80], gamma=0.1, verbose=True)
         else:
             raise NotImplementedError("Only Support [ReduceLROnPlateau, CosineAnnealingLR, ExponentialLR, MultiStepLR]")
         
@@ -173,30 +175,29 @@ class Trainer(object):
         else:
             print("There is no checkpoint, train from scratch!")
     
-        best_net_score = 0. # Val and save model
+        best_net_score = -2. # Val and save model
         best_score_for_ReduceLROnPlateau = 0. # max mode for ReduceLROnPlateau lr_Scheduler
         
         epoch = self.epoch + 1
         
         while epoch <= self.num_epochs:
         
-            print("Start Training Epoch-{} ...".format(epoch))
+            print("\n\nStart Training Epoch-{} ...".format(epoch))
             # 下面两行应该放在循环的最后面 因为循环还没写完怕忘记了就先放这里了
-            self.epoch = self.epoch + 1
-            epoch = epoch + 1
+            
             
             self.net.train(True)
             
             epoch_loss = 0.
             
             metrics = {
-                'acc':  {'{k}'.format(k): 0. for k in self.threshold_list},
-                'SE':   {'{k}'.format(k): 0. for k in self.threshold_list},
-                'SP':   {'{k}'.format(k): 0. for k in self.threshold_list},
-                'PC':   {'{k}'.format(k): 0. for k in self.threshold_list},
-                'F1':   {'{k}'.format(k): 0. for k in self.threshold_list},
-                'JS':   {'{k}'.format(k): 0. for k in self.threshold_list},
-                'DC':   {'{k}'.format(k): 0. for k in self.threshold_list},
+                'acc':  {'{}'.format(k): 0. for k in self.threshold_list},
+                'SE':   {'{}'.format(k): 0. for k in self.threshold_list},
+                'SP':   {'{}'.format(k): 0. for k in self.threshold_list},
+                'PC':   {'{}'.format(k): 0. for k in self.threshold_list},
+                'F1':   {'{}'.format(k): 0. for k in self.threshold_list},
+                'JS':   {'{}'.format(k): 0. for k in self.threshold_list},
+                'DC':   {'{}'.format(k): 0. for k in self.threshold_list},
             }
     
         
@@ -260,7 +261,11 @@ class Trainer(object):
                     ###
                     # 这里要考虑一下保存的时候要记录最佳的threshol是多少
                     
+                    
+            self.epoch = self.epoch + 1
+            epoch = epoch + 1          
         
+        self.save_checkpoint(epoch)
         self.validation(epoch)
                     
                 
