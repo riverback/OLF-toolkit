@@ -38,11 +38,12 @@ class FocalLoss(nn.Module):
     def forward(self, inputs, targets):
         N = inputs.size(0)
         C = inputs.size(1)
-        P = F.softmax(inputs)
+        # P = F.softmax(inputs)
+        P = inputs
 
         class_mask = inputs.data.new(N, C).fill_(0)
         class_mask = Variable(class_mask)
-        ids = targets.view(-1, 1)
+        ids = targets.view(-1, 1).long()
         class_mask.scatter_(1, ids.data, 1.)
         #print(class_mask)
 
@@ -95,7 +96,8 @@ class BCEFocalLoss(torch.nn.Module):
         self.reduction = reduction
  
     def forward(self, _input, target):
-        pt = torch.sigmoid(_input)
+        # 这里之前是pt = torch.sigmoid(_input) 已经把sigmoid加到训练的代码里了 这里就不加了
+        pt = _input
         alpha = self.alpha
         loss = - alpha * (1 - pt) ** self.gamma * target * torch.log(pt) - \
                (1 - alpha) * pt ** self.gamma * (1 - target) * torch.log(1 - pt)

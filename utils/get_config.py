@@ -15,7 +15,7 @@ def getConfig():
     # Path
     parser.add_argument('--olf_root', type=str, default=r'C:\ZhuangResearchCode\OLF_TASK\Data',
                         help='path for olf-data root')
-    parser.add_argument('--experiment_name', type=str, default='First_Try',
+    parser.add_argument('--experiment_name', type=str, default='Try_Focall_Loss',
                         help='name for experiment log')
     
     # DataSet and DataLoader
@@ -25,6 +25,8 @@ def getConfig():
     parser.add_argument('--num_workers', type=int, default=4, help='num_workers')
     parser.add_argument('--mode', type=str, default='train',
                         help='')
+    parser.add_argument('--normalize', type=bool, default=True,
+                        help='normalize when preparing data')
     
     # Basic Model Hyperparameters
     parser.add_argument('--image_channels', type=int, default=1, 
@@ -33,7 +35,7 @@ def getConfig():
                         help='olf-seg-only=1, olf-do-seg=2')
     
     # Traing Parameter Settings
-    parser.add_argument('--num_epochs', type=int, default=20, 
+    parser.add_argument('--num_epochs', type=int, default=10, 
                         help='')
     parser.add_argument('--lr', type=float, default=0.001, 
                         help='learning rate')

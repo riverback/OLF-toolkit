@@ -127,9 +127,9 @@ class OLFDataset(data.Dataset):
         image, label = Transform(image), Transform(label)
         
         """Normalize"""
-        '''if self.config.normalize == True:
+        if self.config.normalize == True:
             Norm = T.Normalize(mean=self.mean, std=self.std)
-            image = Norm(image)'''
+            image = Norm(image)
         
         return image, label
         

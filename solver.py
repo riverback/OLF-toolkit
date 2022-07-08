@@ -68,7 +68,8 @@ class Trainer(object):
         self.lr_Scheduler = self._set_lr_Scheduler()
         
         # Set Loss Function
-        self.loss_function = BCEFocalLoss().cuda()
+        # self.loss_function = BCEFocalLoss().cuda()
+        self.loss_function = FocalLoss(class_num=1).cuda()
         
         # Set Dataloader
         self.train_loader = get_loader(self.config)
@@ -156,11 +157,11 @@ class Trainer(object):
         
         
     def validation(self, epoch):
-        print("Validation Not Implemented yet, just return -1")
+        print("Start Validating...")
+        # print("Validation Not Implemented yet, just return -1")
         return -1, 0.0
         
-        
-    
+         
     def train(self):
         
         if op.exists(op.join(self.checkpoint_folder,
@@ -183,8 +184,6 @@ class Trainer(object):
         while epoch <= self.num_epochs:
         
             print("\n\nStart Training Epoch-{} ...".format(epoch))
-            # 下面两行应该放在循环的最后面 因为循环还没写完怕忘记了就先放这里了
-            
             
             self.net.train(True)
             
