@@ -1,21 +1,31 @@
-from datasets.OLFDataset import OLFDataset
+from datasets.OLFDataset import OLF_SEG_Dataset
 from torch.utils import data
 
 
 def get_loader(config):
+
+    OLF_SEG_DATASET = OLF_SEG_Dataset(config)
     
-    dataset = OLFDataset(config)
-    
-    if config.mode == 'train':
-        shuffle_flag = True
-    else:
-        shuffle_flag = False
-        
-    data_loader = data.DataLoader(
-        dataset=dataset,
+    train_dataloader = data.DataLoader(
+        dataset=OLF_SEG_DATASET.train_Dataset,
         batch_size=config.batch_size,
-        shuffle=shuffle_flag,
+        shuffle=True,
         num_workers=config.num_workers
     )
     
-    return data_loader
+    val_dataloader = data.DataLoader(
+        dataset=OLF_SEG_DATASET.val_Dataset,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers
+    )
+    
+    test_dataloader = data.DataLoader(
+        dataset=OLF_SEG_DATASET.test_Dataset,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers
+    )
+    
+    
+    return train_dataloader, val_dataloader, test_dataloader
