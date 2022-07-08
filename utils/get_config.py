@@ -13,9 +13,9 @@ def getConfig():
                         help='')
     
     # Path
-    parser.add_argument('--olf_root', type=str, default=r'C:\ZhuangResearchCode\OLF_TASK\Data',
+    parser.add_argument('--olf_root', type=str, default=r'Data',
                         help='path for olf-data root')
-    parser.add_argument('--experiment_name', type=str, default='Try_Focall_Loss',
+    parser.add_argument('--experiment_name', type=str, default='DEBUG',
                         help='name for experiment log')
     
     # DataSet and DataLoader
@@ -25,8 +25,16 @@ def getConfig():
     parser.add_argument('--num_workers', type=int, default=4, help='num_workers')
     parser.add_argument('--mode', type=str, default='train',
                         help='')
-    parser.add_argument('--normalize', type=bool, default=True,
+    parser.add_argument('--std', type=float, default=1.,
                         help='normalize when preparing data')
+    parser.add_argument('--mean', type=float, default=0.,
+                        help='normalize when preparing data')
+    parser.add_argument('--aug_prob', type=float, default=0.3,
+                        help='aug prob for train dataset')
+    parser.add_argument('--contraster_factor', type=float, default=0.2,
+                        help='Color Jetter factor')
+    parser.add_argument('--brighness_factor', type=float, default=0.2,
+                        help='Color Jetter factor')
     
     # Basic Model Hyperparameters
     parser.add_argument('--image_channels', type=int, default=1, 
