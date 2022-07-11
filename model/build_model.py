@@ -1,5 +1,6 @@
 import torch.nn as nn
-from model.unet import U_Net
+from model.Semantic_Segmentation.U_Net.unet import U_Net
+from model.Semantic_Segmentation.DeepLab.deeplabv3 import deeplabv3_resnet50, deeplabv3_resnet101
 
 MODEL_LIST = ['U_Net']
 
@@ -11,8 +12,10 @@ def build_model(config) -> nn.Module:
     
     if config.model == 'U_Net':
         model = U_Net(config)
-    elif config.model == '':
-        ...
+    elif config.model == 'DeepLabV3_ResNet50':
+        model = deeplabv3_resnet50(config.image_channels, config.output_channels)
+    elif config.model == 'DeepLabV3_ResNet101':
+        model = deeplabv3_resnet101(config.image_channels, config.output_channels)
     else:
         ...
         

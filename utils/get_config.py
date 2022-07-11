@@ -23,8 +23,6 @@ def getConfig():
                         help='[olf-seg-only, ]')
     parser.add_argument('--batch_size', type=int, default=2, help='batch_size')
     parser.add_argument('--num_workers', type=int, default=4, help='num_workers')
-    parser.add_argument('--mode', type=str, default='train',
-                        help='')
     parser.add_argument('--std', type=float, default=1.,
                         help='normalize when preparing data')
     parser.add_argument('--mean', type=float, default=0.,
@@ -49,6 +47,8 @@ def getConfig():
                         help='learning rate')
     parser.add_argument('--num_epochs_decay', type=int, default=30,
                         help='start decay lr after these epochs')
+    parser.add_argument('--Gradient_Clip_Epoch', type=int, default=10,
+                        help='gradient clipping in fisrt several epochs')
     parser.add_argument('--lr_Scheduler', type=str, default='ExponentialLR',
                         help='[ReduceLROnPlateau, CosineAnnealingLR, ExponentialLR, MultiStepLR]')
     parser.add_argument('--beta1', type=float, default=0.9,
@@ -66,7 +66,7 @@ def getConfig():
     
     # Basic Model Setting
     parser.add_argument('--model', type=str, default='U_Net',
-                        help='[U_Net, ]')
+                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101]')
     
     # Architecture Hyperparameters
 
