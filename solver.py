@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchvision
 import os
 import os.path as op
 import sys
@@ -32,6 +33,13 @@ class Trainer(object):
         self.checkpoint_folder = op.join(self.log_folder, 'checkpoints')
         if not op.exists(self.checkpoint_folder):
             os.makedirs(self.checkpoint_folder)
+
+        self.vis_folder = op.join(self.log_folder, 'vis')
+        if not op.exists(self.vis_folder):
+            os.makedirs(self.vis_folder)
+        self.test_vis_folder = op.join(self.vis_folder, 'test')
+        if not op.exists(self.test_vis_folder):
+            os.makedirs(self.test_vis_folder)
         
         
         # Print Config
@@ -49,6 +57,7 @@ class Trainer(object):
         self.num_epochs = self.config.num_epochs # 总共的训练轮数
         self.epoch = 0 # 当前已经训练完的轮数
         self.num_epochs_decay = self.config.num_epochs_decay
+        self.Gradient_Clip_Epoch = self.config.Gradient_Clip_Epoch
         
         # Set Model
         self.net = self._set_model()
@@ -112,27 +121,27 @@ class Trainer(object):
     
     def save_checkpoint(self, epoch, tag=None):
         if tag is None:
-            print("saving checkpoint for epoch {}".format(epoch))
+            print("saving checkpoint for epoch {}\n".format(epoch))
             checkpoint_path = op.join(self.checkpoint_folder, 
                                     self._CHECKPOINT_NAME_TEMPLATE.format('%d'%(epoch)))
             self._torch_save_model(epoch, checkpoint_path)
-            print("save checkpoint to {}".format(checkpoint_path))
+            print("save checkpoint to {}\n".format(checkpoint_path))
         else:
             print("saving the best model")
             checkpoint_path = op.join(self.checkpoint_folder,
                                       self._CHECKPOINT_NAME_TEMPLATE.format(tag))
             self._torch_save_model(epoch, checkpoint_path)
-            print("save the best model to {}".format(checkpoint_path))
+            print("save the best model to {}\n".format(checkpoint_path))
 
         if self.epoch == self.num_epochs:
             print("save the last model")
             checkpoint_path = op.join(self.checkpoint_folder, 
                                   self._CHECKPOINT_NAME_TEMPLATE.format('last'))
             self._torch_save_model(epoch, checkpoint_path)
-            print("save the last model to {}".format(checkpoint_path))
+            print("save the last model to {}\n".format(checkpoint_path))
         
     
-    def load_checkpoint(self, checkpoint_type):
+    def _load_checkpoint(self, checkpoint_type):
         if checkpoint_type not in ('best', 'last'):
             raise ValueError("checkpoint_type must be either best or last.")
         checkpoint_path = op.join(
@@ -141,15 +150,12 @@ class Trainer(object):
         )
         
         if op.isfile(checkpoint_path):
+            print("load best model from {}".format(checkpoint_path))
             checkpoint = torch.load(checkpoint_path)
             self.net.load_state_dict(checkpoint['model_state_dict'], strict=True)
             self.epoch = checkpoint['epoch']
             self.optimizer.load_state_dict(checkpoint['optimizer'])
             
-            if self.config.mode == 'val' or 'test':
-                self.net.eval()
-            elif self.config.mode == 'train':
-                self.net.train()
         else:
             raise IOError("No checkpoint {}".format(checkpoint_path))
         
@@ -160,10 +166,113 @@ class Trainer(object):
         
         
     def validation(self, epoch):
-        print("Start Validating...")
-        # print("Validation Not Implemented yet, just return -1")
-        return -1, 0.0
+        print("\nStart Validate Epoch-{}...".format(epoch))
+
+        self.net.eval()
+
+        metrics = {
+            'acc':  {'{}'.format(k): 0. for k in self.threshold_list},
+            'SE':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'SP':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'PC':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'F1':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'JS':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'DC':   {'{}'.format(k): 0. for k in self.threshold_list},
+        }
         
+        best_net_score = 0.
+        best_threshold = 0.
+
+        for batch_idx, (images, labels) in enumerate(self.val_loader):
+
+            images = images.to(self.device)
+            labels = labels.to(self.device)
+
+            seg_maps = self.net(images)
+            
+
+            for threshold in self.threshold_list:
+                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps, labels, threshold)
+                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps, labels, threshold)
+                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps, labels, threshold)
+                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps, labels, threshold)
+                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
+                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
+                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
+                sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
+                if sum_score > best_net_score:
+                    best_net_score, best_threshold = sum_score, threshold
+
+            
+
+        for metric in metrics.keys():
+            for k in metrics[metric].keys():
+                metrics[metric][k] = metrics[metric][k] / (batch_idx + 1)
+        
+        print_metrics(metrics, mode='val')
+
+        return best_net_score, best_threshold
+    
+
+    def test(self):
+        print("\nStart Testing...")
+
+        self.net.eval()
+        self._load_checkpoint(checkpoint_type='best')
+
+        metrics = {
+            'acc':  {'{}'.format(k): 0. for k in self.threshold_list},
+            'SE':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'SP':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'PC':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'F1':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'JS':   {'{}'.format(k): 0. for k in self.threshold_list},
+            'DC':   {'{}'.format(k): 0. for k in self.threshold_list},
+        }
+
+        best_net_score = 0.
+        best_threshold = 0.
+
+        for batch_idx, (images, labels) in enumerate(self.val_loader):
+
+            images = images.to(self.device)
+            labels = labels.to(self.device)
+
+            seg_maps = self.net(images)
+
+            for threshold in self.threshold_list:
+                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps, labels, threshold)
+                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps, labels, threshold)
+                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps, labels, threshold)
+                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps, labels, threshold)
+                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
+                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
+                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
+                sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
+                if sum_score > best_net_score:
+                    best_net_score, best_threshold = sum_score, threshold
+
+            SR_current_path = op.join(self.test_vis_folder, f"{batch_idx}_SegResults.png")
+            RS_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Results_Vis.png")
+
+            torchvision.utils.save_image(seg_maps.data.cpu(), SR_current_path)
+            save_results = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
+            RS = seg_maps.clone()
+            RS[RS > 0.5] = 1
+            RS[RS != 1] = 0
+            save_results[:, 0, :, :] = labels[:, 0, :, :].data.cpu()
+            save_results[:, 1, :, :] = RS[:, 0, :, :].data.cpu()
+            torchvision.utils.save_image(save_results.data.cpu(), RS_current_path)
+
+        for metric in metrics.keys():
+            for k in metrics[metric].keys():
+                metrics[metric][k] = metrics[metric][k] / (batch_idx + 1)
+        
+        print_metrics(metrics, mode='test')
+
+        print("Generating Visualization for Test Stage...")
+
+
          
     def train(self):
         
@@ -180,10 +289,10 @@ class Trainer(object):
             print("There is no checkpoint, train from scratch!")
     
         best_net_score = -2. # Val and save model
+        best_threshold = 0.
         best_score_for_ReduceLROnPlateau = 0. # max mode for ReduceLROnPlateau lr_Scheduler
         
         epoch = self.epoch + 1
-        
         while epoch <= self.num_epochs:
         
             print("\n\nStart Training Epoch-{} ...".format(epoch))
@@ -220,8 +329,13 @@ class Trainer(object):
                 
                 epoch_loss += loss.item()
                     
-                # self._reset_grad()
+                
                 loss.backward()
+
+                # Gradient Clipping
+                if epoch < self.Gradient_Clip_Epoch:
+                    nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=1.5, norm_type=2)
+
                 self.optimizer.step()
                 
                 for threshold in self.threshold_list:
@@ -232,9 +346,9 @@ class Trainer(object):
                     PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
                     SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
                     SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
-                    sum_score = acc + DC + F1 + JS + PC + SE + SP
+                    sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
                     if sum_score > best_score_for_ReduceLROnPlateau:
-                        best_score_for_ReduceLROnPlateau = sum_score
+                        best_score_for_ReduceLROnPlateau, best_threshold = sum_score, threshold
             
             for metric in metrics.keys():
                 for k in metrics[metric].keys():
@@ -242,8 +356,8 @@ class Trainer(object):
                     
 
             # Print the log info 
-            print("[Loss]: {:.4f}".format(epoch_loss))
-            print_metrics(metrics, mode=self.config.mode)
+            print("[Loss]: {:.4f}, [Net_Score]: {:.4f}, [Threshold]: {}".format(epoch_loss, best_score_for_ReduceLROnPlateau/(batch_idx + 1), best_threshold))
+            print_metrics(metrics, mode='train')
             
             # Decay Learning Rate
             if self.config.lr_Scheduler != 'ReduceLROnPlateau':
@@ -261,18 +375,19 @@ class Trainer(object):
                 # Save the best model
                 if net_score > best_net_score:
                     best_net_score = net_score
+                    best_threshold = threshold
                     self.save_checkpoint(epoch, tag='best')
                     ###
-                    # 这里要考虑一下保存的时候要记录最佳的threshol是多少
+                    # 这里要考虑一下保存的时候要记录最佳的threshold是多少
                     
                     
             self.epoch = self.epoch + 1
             epoch = epoch + 1          
         
-        self.save_checkpoint(epoch)
-        self.validation(epoch)
+        
+        net_score, threshold = self.validation(epoch)
                     
-                
+        self.test()      
             
                 
         

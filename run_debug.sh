@@ -1,10 +1,10 @@
 olf_root="Data"
-experiment_name="U_Net"
+experiment_name="TEST_DeepLabV3_ResNet50"
 cuda_idx="5"
 task="olf-seg-only"
-model="U_Net"
+model="DeepLabV3_ResNet50"
 batch_size=4
-num_epochs=300
+num_epochs=100
 num_epochs_decay=10
 num_workers=16
 eval_frequency=10
