@@ -58,4 +58,4 @@ def print_metrics(metrics: dict, mode='train'):
     if mode != 'train':
         print("\nBest metrics:")
         for k, v in best_metrics.items():
-            print("{}: {:.4f} use threshold {}".format(k, v[1], v[0]))
+            print("{}: {:.4f} use {}".format(k, v[1], v[0]))
