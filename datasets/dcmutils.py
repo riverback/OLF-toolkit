@@ -7,6 +7,7 @@ import cv2
 
 
 def ReadImageSequenceSitk(data_folder):
+    ### 这个函数是针对原始数据是断状面 要重建成矢状面写的
     data_paths = os.listdir(data_folder)
 
     itk_img_head = sitk.ReadImage(ospj(data_folder, data_paths[0]))
@@ -75,19 +76,18 @@ def ReadDcmSequencePydicom(dcm_folder, norm=True):
     hu_scans = get_pixels_hu(scans)
     if norm == True:
         hu_scans = normalize_minmax(hu_scans)
-        # hu_scans = 255 * hu_scans
+        hu_scans = 255 * hu_scans # 这一行在可视化看结果的时候要加上
 
     hu_scans = np.transpose(hu_scans, (2, 1, 0))
-    slices = [np.rot90(np.flip(hu_scans[idx, :, :], axis=1), 1)
-              for idx in range(hu_scans.shape[0])]
-
-    '''
-    vis_path = r'C:\ZhuangResearchCode\OLF_TASK\vis'
+    slices = [np.rot90(np.flip(hu_scans[:, :, idx], axis=1), 1) for idx in range(hu_scans.shape[-1])] # idx在第一个位置就说明是断状面重建矢状面 第三个位置就是原始数据就是矢状面的
+    
+    
+    vis_path = 'vis'
     for i in range(len(slices)):
-        out_path = ospj(vis_path, f'{i}.png')
+        out_path = ospj(vis_path, f'raw_{i}.png')
         cv2.imwrite(out_path, slices[i])
     print("finished")
-    '''
+    
 
     return slices
 
@@ -96,9 +96,9 @@ __all__ = [ReadImageSequenceSitk]
 
 
 if __name__ == '__main__':
-    data_folder = r'..\Data\RAW\002'
+    data_folder = 'Data/RAW/003'
 
     arr = np.array(ReadDcmSequencePydicom(data_folder))
-    np.save(ospj(r'..\Data\RAW\npydata', '002'), arr)
+    np.save(ospj('Data/RAW/npydata', '003'), arr)
 
     print("hello-world")

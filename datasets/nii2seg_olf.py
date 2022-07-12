@@ -29,7 +29,8 @@ def nii2seg_olf_label(config):
     l, w, h = volume_data.shape
     
     GT = []
-    
+
+    '''这部分代码是针对断状面重建矢状面的代码
     for x in range(l):
         gt = np.zeros([h, w])
         img = volume_data[x, :, :]
@@ -37,7 +38,17 @@ def nii2seg_olf_label(config):
             for j in range(w):
                 gt[i, j] = img[j, i]
         GT.append(gt)            
-    
+    '''
+
+    for z in range(h):
+        gt = np.zeros([w, l])
+        img = volume_data[:, :, z]
+
+        for i in range(l):
+            for j in range(w):
+                gt[j, i] = img[i, j]
+        GT.append(gt)
+
     return GT
 
 
@@ -47,22 +58,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # path
-    parser.add_argument('--volume_path', type=str, default=r'..\Data\GT\002\Label.nii.gz',
+    parser.add_argument('--volume_path', type=str, default='Data/GT/003/IMG00012_dcm_Label.nii.gz',
                         help='xxxlabel.nii.gz is required')
     parser.add_argument('--output_folder', type=str,
-                        default=r'..\Data_Seg_OLF\002\vis_GT', help='the folder to save png label')
+                        default='Data_Seg_OLF/003/vis_GT', help='the folder to save png label')
 
     config = parser.parse_args()
 
     print(config)
 
-    # GT = np.array(nii2seg_olf_label(config))
+    GT = np.array(nii2seg_olf_label(config))
 
-    # print(GT.shape) #(512, 601, 512) 第一个512是512份数据 
+    print(GT.shape) #(512, 601, 512) 第一个512是512份数据 
 
-    # output_path = ospj(config.output_folder, 'Label_seg_olf')
+    output_path = ospj(config.output_folder, 'Label_seg_olf')
     
-    # np.save(output_path, GT)
+    np.save(output_path, GT)
 
 
 

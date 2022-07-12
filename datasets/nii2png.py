@@ -53,7 +53,17 @@ def nii2png(config):
 
     volume_data = np.flip(volume_data, 2)
     l, w, h = volume_data.shape
+    print(l, w, h)
+    for z in range(h):
+        GT_path = os.path.join(output_folder, f'gt_{z}.png')
+        img = volume_data[:, :, z]
+        GT = np.zeros([w, l, 3])
+        for i in range(l):
+            for j in range(w):
+                GT[j, i, :] = BGR[img[i, j]]
 
+        cv2.imwrite(GT_path, GT)
+    '''
     # 现有数据的构建方式均为: 原始数据为xy平面 重建后在yz平面进行了标注
     for x in range(l):
         GT_path = os.path.join(output_folder, f'{x}.png')
@@ -65,7 +75,7 @@ def nii2png(config):
                 GT[i, j, :] = BGR[img[j, i]]
 
         cv2.imwrite(GT_path, GT)
-
+    '''
     print("convert is finished")
 
 
@@ -78,7 +88,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # path
-    parser.add_argument('--volume_path', type=str, default=r'',
+    parser.add_argument('--volume_path', type=str, default='Data/GT/003/IMG00012_dcm_Label.nii.gz',
                         help='xxxlabel.nii.gz is required')
     parser.add_argument('--output_folder', type=str,
                         default='vis', help='the folder to save png label')
@@ -87,4 +97,4 @@ if __name__ == '__main__':
 
     print(config)
 
-    # nii2png(config)
+    nii2png(config)

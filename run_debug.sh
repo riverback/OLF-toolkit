@@ -1,5 +1,5 @@
 olf_root="Data"
-experiment_name="Test_SSLloss_U_Net"
+experiment_name="U_Net"
 cuda_idx="3"
 task="olf-seg-only"
 model="U_Net"
