@@ -71,7 +71,9 @@ class OLF_SEG_Dataset(object):
         self.RAW_root = ospj(self.root, 'RAW')
         
         self.GT_folder_paths = [ospj(self.GT_root, path) for path in  os.listdir(self.GT_root)] # 001 002 ...
+        self.GT_folder_paths.sort()
         self.RAW_paths = [ospj(ospj(self.RAW_root, 'npydata'), path) for path in os.listdir(ospj(self.RAW_root, 'npydata'))]
+        self.RAW_paths.sort()
         
         if self.config.task == 'olf-seg-only':
             self.GT_paths = [ospj(folder_path, 'Label_seg_olf.npy') for folder_path in self.GT_folder_paths]    
@@ -84,6 +86,8 @@ class OLF_SEG_Dataset(object):
         
         for i in range(len(self.RAW_paths)):
             GT = np.load(self.GT_paths[i])
+            # if GT.max() != 1:
+            #     raise ValueError("GT for seg-olf only should have max value = 1")
             DCM = np.load(self.RAW_paths[i])
             for n in range(*OLF_SLICE[i+1]):
                 p = random.random()

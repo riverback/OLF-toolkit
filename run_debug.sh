@@ -1,6 +1,6 @@
 olf_root="Data"
-experiment_name="U_Net"
-cuda_idx="3"
+experiment_name="U_Net_Test_Threshold"
+cuda_idx="7"
 task="olf-seg-only"
 model="U_Net"
 batch_size=6

@@ -253,7 +253,7 @@ class Trainer(object):
         best_net_score = 0.
         best_threshold = 0.
 
-        for batch_idx, (images, labels) in enumerate(self.val_loader):
+        for batch_idx, (images, labels) in enumerate(self.test_loader):
 
             images = images.to(self.device)
             labels = labels.to(self.device)
@@ -278,7 +278,7 @@ class Trainer(object):
             torchvision.utils.save_image(seg_maps.data.cpu(), SR_current_path)
             save_results = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
             RS = seg_maps.clone()
-            RS[RS > 0.5] = 1
+            RS[RS > best_threshold] = 1
             RS[RS != 1] = 0
             save_results[:, 0, :, :] = labels[:, 0, :, :].data.cpu()
             save_results[:, 1, :, :] = RS[:, 0, :, :].data.cpu()
@@ -291,6 +291,7 @@ class Trainer(object):
         print_metrics(metrics, mode='test')
 
         print("Generating Visualization for Test Stage...")
+        print("Use threshold {}".format(best_threshold))
 
 
          

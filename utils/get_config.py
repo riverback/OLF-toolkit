@@ -7,7 +7,7 @@ def getConfig():
     parser = argparse.ArgumentParser()
     
     # Environment
-    parser.add_argument('--cuda_idx', type=str, default='0',
+    parser.add_argument('--cuda_idx', type=str, default='7',
                         help='multi-gpu: "1,2" ')
     parser.add_argument('--seed', type=int, default=10,
                         help='')
