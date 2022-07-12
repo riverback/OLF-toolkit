@@ -1,15 +1,16 @@
 olf_root="Data"
-experiment_name="TEST_DeepLabV3_ResNet50"
-cuda_idx="5"
+experiment_name="Test_SSLloss_U_Net"
+cuda_idx="3"
 task="olf-seg-only"
-model="DeepLabV3_ResNet50"
-batch_size=4
+model="U_Net"
+batch_size=6
 num_epochs=100
 num_epochs_decay=10
 num_workers=16
-eval_frequency=10
+eval_frequency=5
 lr=0.0002
-lr_Scheduler='ReduceLROnPlateau'
+lr_Scheduler='ExponentialLR'
+loss_type='SSLoss'
 
 python main.py --cuda_idx $cuda_idx \
                --seed   10    \
@@ -22,4 +23,5 @@ python main.py --cuda_idx $cuda_idx \
                --num_epochs_decay $num_epochs_decay \
                --eval_frequency $eval_frequency \
                --lr $lr \
-               --lr_Scheduler $lr_Scheduler
+               --lr_Scheduler $lr_Scheduler \
+               --loss_type $loss_type

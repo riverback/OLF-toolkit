@@ -59,6 +59,9 @@ def getConfig():
                         help='Adam settings')
     parser.add_argument('--weight_decay', type=float, default=0.0001,
                         help='Adam settings')
+
+    # Loss Function
+    parser.add_argument('--loss_type', type=str, default='DC_and_topk_loss')
     
     # Val Settings
     parser.add_argument('--eval_frequency', type=int, default=2,

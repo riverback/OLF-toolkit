@@ -12,7 +12,8 @@ from model.build_model import build_model
 from datasets.dataloader import get_loader
 from metrics.losses.loss_function import FocalLoss, BCEFocalLoss
 from metrics.evaluation_seg import get_accuray, get_sensitivity, get_specificity, get_precision, get_F1, get_DC, get_JS
-from metrics.losses.SegLoss.losses_pytorch.dice_loss import DC_and_topk_loss, SoftDiceLoss, DC_and_CE_loss, FocalTversky_loss
+from metrics.losses.SegLoss.losses_pytorch.dice_loss import DC_and_topk_loss, SoftDiceLoss, DC_and_CE_loss, FocalTversky_loss, IoULoss, SSLoss
+from metrics.losses.SegLoss.losses_pytorch.focal_loss import FocalLoss
 
 class Trainer(object):
     _CHECKPOINT_NAME_TEMPLATE = 'checkpoint_{}.pth'
@@ -79,15 +80,15 @@ class Trainer(object):
         # Set Loss Function
         # self.loss_function = FocalTversky_loss({'batch_dice': False, 'smooth': 1e-5}).cuda()
         # self.loss_function = DC_and_CE_loss({'batch_dice': False, 'smooth': 1e-5, 'do_bg': False}, {}).cuda()
-        self.loss_function = SoftDiceLoss().cuda()
-        # self.loss_function = BCEFocalLoss().cuda()
+        self.loss_function = None
+        self._set_loss_function(self.config.loss_type)
         # self.loss_function = DC_and_topk_loss({'batch_dice': True, 'smooth': 1e-5, 'do_bg': False}, {'k': 10}).cuda()
         
         # Set Dataloader
         self.train_loader, self.val_loader, self.test_loader = get_loader(self.config)
         
         
-        self.threshold_list = [0.3, 0.4, 0.5, 0.6, 0.7]
+        self.threshold_list = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
         
         
     def _set_model(self):
@@ -109,6 +110,25 @@ class Trainer(object):
             raise NotImplementedError("Only Support [ReduceLROnPlateau, CosineAnnealingLR, ExponentialLR, MultiStepLR]")
         
         return Scheduler
+
+
+    def _set_loss_function(self, loss_type):
+        
+        if loss_type == 'FocalLoss':
+            self.loss_function = FocalLoss().cuda()
+        elif loss_type == 'IoULoss':
+            self.loss_function = IoULoss().cuda()
+        elif loss_type == 'DC_and_CE_loss':
+            self.loss_function = DC_and_CE_loss({'batch_dice': False, 'smooth': 1e-5, 'do_bg': False}, {}).cuda()
+        elif loss_type == 'DC_and_topk_loss':
+            self.loss_function = DC_and_topk_loss({'batch_dice': True, 'smooth': 1e-5, 'do_bg': False}, {'k': 10}).cuda()
+        elif loss_type == 'SSLoss':
+            self.loss_function = SSLoss().cuda()
+        elif loss_type == 'FocalTversky_loss':
+            self.loss_function = FocalTversky_loss(tversky_kwargs={}, gamma=0.75).cuda()
+
+
+        print("set self.loss_function as: {}".format(type(self.loss_function)))
     
     
     def _torch_save_model(self, epoch, checkpoint_path):
@@ -321,6 +341,8 @@ class Trainer(object):
                 # labels_flat = labels.view(labels.size(0), -1) # 展平用于算指标和loss
             
                 seg_maps = self.net(images)
+                seg_maps = torch.sigmoid(seg_maps)
+                # print(seg_maps.max(), seg_maps.min())
                 # seg_probs = torch.sigmoid(seg_maps)
                 # seg_flat = seg_probs.view(seg_probs.size(0), -1)
                 # seg_flat = seg_maps.view(seg_maps.size(0), -1)
