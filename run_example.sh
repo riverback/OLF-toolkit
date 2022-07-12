@@ -1,10 +1,12 @@
+# This is an example of how to set your own training script
+# For more parameters settings, please refer to the get_config.py
 olf_root="Data"
-experiment_name="DeepLabV3_ResNet50_Test"
+experiment_name="Debug"
 cuda_idx="7"
 task="olf-seg-only"
-model="DeepLabV3_ResNet50"
+model="DeepLabV3_ResNet101"
 batch_size=6
-num_epochs=100
+num_epochs=10
 num_epochs_decay=10
 num_workers=16
 eval_frequency=5
