@@ -11,6 +11,7 @@ eval_frequency=5
 lr=0.0002
 lr_Scheduler='ExponentialLR'
 loss_type='SSLoss'
+aug_prob=0.5
 
 python main.py --cuda_idx $cuda_idx \
                --seed   10    \
@@ -24,4 +25,5 @@ python main.py --cuda_idx $cuda_idx \
                --eval_frequency $eval_frequency \
                --lr $lr \
                --lr_Scheduler $lr_Scheduler \
-               --loss_type $loss_type
+               --loss_type $loss_type \
+               --aug_prob $aug_prob
