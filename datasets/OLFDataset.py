@@ -11,6 +11,7 @@ import random
 from copy import deepcopy
 
 from datasets.seg_olf_slice_info import OLF_SLICE
+from datasets.dcmutils import normalize_minmax
 
 
 class OLFDataset(data.Dataset):
@@ -86,12 +87,14 @@ class OLF_SEG_Dataset(object):
             'test': []
         }
         
-        for i in range(len(self.RAW_paths)):
+        for i in range(len(self.RAW_paths)): # 每次读取一整个文件夹的数据
             GT = np.load(self.GT_paths[i])
             # if GT.max() != 1:
             #     raise ValueError("GT for seg-olf only should have max value = 1")
             DCM = np.load(self.RAW_paths[i])
-            for n in range(*OLF_SLICE[i+1]):
+            if DCM.max() > 1.:
+                DCM = normalize_minmax(DCM)
+            for n in range(*OLF_SLICE[i+1]): # 目前数据少,采用随机分配的方式划分,之后这里直接本地划分文件夹就可以了,目前这种方式有数据泄露的嫌疑
                 p = random.random()
                 if p < self.split_prob['train']:
                     self.DataPackage['train'].append([DCM[n, :, :], GT[n, :, :]])
@@ -100,7 +103,7 @@ class OLF_SEG_Dataset(object):
                 else:
                     self.DataPackage['test'].append([DCM[n, :, :], GT[n, :, :]])
         
-        self.__aug_train_set()
+        self.__aug_train_set() # 对训练集进行数据增广
         
         self.train_Dataset = OLFDataset(data=self.DataPackage['train'], mode='train', std=config.std, mean=config.mean)
         self.val_Dataset = OLFDataset(data=self.DataPackage['val'], mode='val')
