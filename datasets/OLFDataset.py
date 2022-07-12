@@ -24,6 +24,8 @@ class OLFDataset(data.Dataset):
         self.image_size = 512
         
         self.Data = deepcopy(data)
+
+        print("{} Images in {} dataset".format(self.__len__(), self.mode))
         
         
     def __getitem__(self, index):

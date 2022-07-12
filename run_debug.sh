@@ -1,8 +1,8 @@
 olf_root="Data"
-experiment_name="U_Net_Test_Threshold"
+experiment_name="DeepLabV3_ResNet50_Test"
 cuda_idx="7"
 task="olf-seg-only"
-model="U_Net"
+model="DeepLabV3_ResNet50"
 batch_size=6
 num_epochs=100
 num_epochs_decay=10
