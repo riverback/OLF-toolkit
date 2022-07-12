@@ -1,5 +1,7 @@
 code for OLF task
 
+![Cover](A CV Solution to Dural ossification.jfif)
+
 loss function is from https://github.com/JunMa11/SegLoss
 
 Original Data
