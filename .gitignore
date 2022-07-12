@@ -23,3 +23,4 @@ Data_Seg_OLF/*
 Data_Seg_OLF
 .vscode
 .vscode/*
+run_train.sh
