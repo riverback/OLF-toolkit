@@ -1,6 +1,6 @@
 code for OLF task
 
-![Cover](A CV Solution to Dural ossification.jfif)
+![Cover](https://github.com/riverback/OLF-toolkit/blob/main/presentation/A%20CV%20Solution%20to%20Dural%20ossification.jfif)
 
 loss function is from https://github.com/JunMa11/SegLoss
 
