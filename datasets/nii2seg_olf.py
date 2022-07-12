@@ -24,13 +24,13 @@ def nii2seg_olf_label(config):
     
     volume_data = np.flip(volume_data, 2)
     
-    volume_data[volume_data > 0.] = 255
+    volume_data[volume_data > 0.] = 1
     
     l, w, h = volume_data.shape
     
     GT = []
-
-    '''这部分代码是针对断状面重建矢状面的代码
+    '''
+    # 这部分代码是针对断状面重建矢状面的代码
     for x in range(l):
         gt = np.zeros([h, w])
         img = volume_data[x, :, :]
@@ -39,7 +39,7 @@ def nii2seg_olf_label(config):
                 gt[i, j] = img[j, i]
         GT.append(gt)            
     '''
-
+    # 这部分代码是针对原始数据就是矢状面的情况
     for z in range(h):
         gt = np.zeros([w, l])
         img = volume_data[:, :, z]
@@ -48,7 +48,7 @@ def nii2seg_olf_label(config):
             for j in range(w):
                 gt[j, i] = img[i, j]
         GT.append(gt)
-
+    
     return GT
 
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # path
-    parser.add_argument('--volume_path', type=str, default='Data/GT/003/IMG00012_dcm_Label.nii.gz',
+    parser.add_argument('--volume_path', type=str, default='Data/GT/003/Label.nii.gz',
                         help='xxxlabel.nii.gz is required')
     parser.add_argument('--output_folder', type=str,
                         default='Data_Seg_OLF/003/vis_GT', help='the folder to save png label')
@@ -79,10 +79,10 @@ if __name__ == '__main__':
 
     ### 查看含有骨化块的切边编号并记录 用于训练分割模型
     ### 用这部分代码的时候记得把上面的 volume_data[volume_data > 0.] = xxx 的xxx改成255
-    GT = nii2seg_olf_label(config)
+    '''GT = nii2seg_olf_label(config)'''
 
-    for i in range(len(GT)):
-        cv2.imwrite(ospj(config.output_folder, f'{i}.png'), GT[i])
+    '''for i in range(len(GT)):
+        cv2.imwrite(ospj(config.output_folder, f'{i}.png'), GT[i]*255)'''
 
     print('break-point')
     

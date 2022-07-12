@@ -76,16 +76,16 @@ def ReadDcmSequencePydicom(dcm_folder, norm=True):
     hu_scans = get_pixels_hu(scans)
     if norm == True:
         hu_scans = normalize_minmax(hu_scans)
-        hu_scans = 255 * hu_scans # 这一行在可视化看结果的时候要加上
+        # hu_scans = 255 * hu_scans # 这一行在可视化看结果的时候要加上
 
     hu_scans = np.transpose(hu_scans, (2, 1, 0))
-    slices = [np.rot90(np.flip(hu_scans[:, :, idx], axis=1), 1) for idx in range(hu_scans.shape[-1])] # idx在第一个位置就说明是断状面重建矢状面 第三个位置就是原始数据就是矢状面的
+    slices = [np.rot90(np.flip(hu_scans[idx, :, :], axis=1), 1) for idx in range(hu_scans.shape[0])] # idx在第一个位置就说明是断状面重建矢状面 第三个位置就是原始数据就是矢状面的
     
     
-    vis_path = 'vis'
+    '''vis_path = 'vis'
     for i in range(len(slices)):
         out_path = ospj(vis_path, f'raw_{i}.png')
-        cv2.imwrite(out_path, slices[i])
+        cv2.imwrite(out_path, slices[i])'''
     print("finished")
     
 
@@ -96,9 +96,9 @@ __all__ = [ReadImageSequenceSitk]
 
 
 if __name__ == '__main__':
-    data_folder = 'Data/RAW/003'
+    data_folder = 'Data/RAW/002'
 
     arr = np.array(ReadDcmSequencePydicom(data_folder))
-    np.save(ospj('Data/RAW/npydata', '003'), arr)
+    np.save(ospj('Data/RAW/npydata', '002'), arr)
 
     print("hello-world")
