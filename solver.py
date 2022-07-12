@@ -274,6 +274,8 @@ class Trainer(object):
 
             SR_current_path = op.join(self.test_vis_folder, f"{batch_idx}_SegResults.png")
             RS_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Results_Vis.png")
+            IMG_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Input.png")
+            torchvision.utils.save_image(images.data.cpu(), IMG_current_path)
 
             torchvision.utils.save_image(seg_maps.data.cpu(), SR_current_path)
             save_results = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
