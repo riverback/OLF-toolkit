@@ -2,7 +2,7 @@ import torch.nn as nn
 from model.Semantic_Segmentation.U_Net.unet import U_Net
 from model.Semantic_Segmentation.DeepLab.deeplabv3 import deeplabv3_resnet50, deeplabv3_resnet101
 
-MODEL_LIST = ['U_Net']
+MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101']
 
 def build_model(config) -> nn.Module:
     if config.model not in MODEL_LIST:

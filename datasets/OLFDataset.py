@@ -26,6 +26,9 @@ class OLFDataset(data.Dataset):
         
         self.Data = deepcopy(data)
 
+        if self.__len__() % 2 != 0:
+            self.Data = self.Data[:-1]
+
         print("{} Images in {} dataset".format(self.__len__(), self.mode))
         
         
@@ -36,9 +39,11 @@ class OLFDataset(data.Dataset):
         image, label = Image.fromarray(image), Image.fromarray(label)
         
         Transform = []
+        '''
         if self.mode == 'train' and random.random() < 0.3:
             RotationRange = random.randint(-10, 10)
             Transform.append(T.RandomRotation((RotationRange, RotationRange)))
+        '''
         Transform.append(T.Resize((self.image_size, self.image_size)))
         Transform.append(T.ToTensor())
         if self.mode is not None and self.std is not None:

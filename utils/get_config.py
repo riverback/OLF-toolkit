@@ -21,8 +21,8 @@ def getConfig():
     # DataSet and DataLoader
     parser.add_argument('--task', type=str, default='olf-seg-only',
                         help='[olf-seg-only, ]')
-    parser.add_argument('--batch_size', type=int, default=2, help='batch_size')
-    parser.add_argument('--num_workers', type=int, default=4, help='num_workers')
+    parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
+    parser.add_argument('--num_workers', type=int, default=16, help='num_workers')
     parser.add_argument('--std', type=float, default=1.,
                         help='normalize when preparing data')
     parser.add_argument('--mean', type=float, default=0.,
@@ -61,14 +61,14 @@ def getConfig():
                         help='Adam settings')
 
     # Loss Function
-    parser.add_argument('--loss_type', type=str, default='DC_and_topk_loss')
+    parser.add_argument('--loss_type', type=str, default='SSLoss')
     
     # Val Settings
     parser.add_argument('--eval_frequency', type=int, default=2,
                         help='eval frequency')
     
     # Basic Model Setting
-    parser.add_argument('--model', type=str, default='U_Net',
+    parser.add_argument('--model', type=str, default='DeepLabV3_ResNet101',
                         help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101]')
     
     # Architecture Hyperparameters

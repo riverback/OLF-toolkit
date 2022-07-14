@@ -78,11 +78,8 @@ class Trainer(object):
         self.lr_Scheduler = self._set_lr_Scheduler()
         
         # Set Loss Function
-        # self.loss_function = FocalTversky_loss({'batch_dice': False, 'smooth': 1e-5}).cuda()
-        # self.loss_function = DC_and_CE_loss({'batch_dice': False, 'smooth': 1e-5, 'do_bg': False}, {}).cuda()
         self.loss_function = None
         self._set_loss_function(self.config.loss_type)
-        # self.loss_function = DC_and_topk_loss({'batch_dice': True, 'smooth': 1e-5, 'do_bg': False}, {'k': 10}).cuda()
         
         # Set Dataloader
         self.train_loader, self.val_loader, self.test_loader = get_loader(self.config)
@@ -93,6 +90,7 @@ class Trainer(object):
         
     def _set_model(self):
         net = build_model(self.config)
+        print("\nset model as {}, type-{}".format(self.config.model, type(net)))
         return net
     
     

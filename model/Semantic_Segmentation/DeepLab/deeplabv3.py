@@ -64,6 +64,8 @@ class ASPPPooling(nn.Sequential):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         size = x.shape[-2:]
+        if x.size(0) == 1:
+            raise ValueError("Batch Error {}, Please consider set training set size '%' batchsize".format(x.size(0)))
         for mod in self:
             x = mod(x)
         return F.interpolate(x, size=size, mode="bilinear", align_corners=False)
