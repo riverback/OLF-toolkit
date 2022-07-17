@@ -22,6 +22,7 @@ def getConfig():
     parser.add_argument('--task', type=str, default='olf-seg-only',
                         help='[olf-seg-only, ]')
     parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
+    parser.add_argument('--image_size', type=int, default=512, help='')
     parser.add_argument('--num_workers', type=int, default=16, help='num_workers')
     parser.add_argument('--std', type=float, default=1.,
                         help='normalize when preparing data')
@@ -69,7 +70,7 @@ def getConfig():
     
     # Basic Model Setting
     parser.add_argument('--model', type=str, default='DeepLabV3_ResNet101',
-                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101]')
+                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, Trans_UNet]')
     
     # Architecture Hyperparameters
 
