@@ -5,6 +5,8 @@ import os
 import os.path as op
 import sys
 import time
+from torch.utils.tensorboard import SummaryWriter
+
 from utils.Logger import Logger
 from utils.get_config import getConfig
 from utils.pyutils import dumpclean, set_seed, print_metrics, print_config
@@ -14,6 +16,7 @@ from metrics.losses.loss_function import FocalLoss, BCEFocalLoss
 from metrics.evaluation_seg import get_accuray, get_sensitivity, get_specificity, get_precision, get_F1, get_DC, get_JS
 from metrics.losses.SegLoss.losses_pytorch.dice_loss import DC_and_topk_loss, SoftDiceLoss, DC_and_CE_loss, FocalTversky_loss, IoULoss, SSLoss
 from metrics.losses.SegLoss.losses_pytorch.focal_loss import FocalLoss
+
 
 class Trainer(object):
     _CHECKPOINT_NAME_TEMPLATE = 'checkpoint_{}.pth'
@@ -46,6 +49,12 @@ class Trainer(object):
         # Print Config
         print("Experiment: {}\nTime: {}".format(self.config.experiment_name, time.ctime()))
         print_config(self.config)
+
+        # Set SummaryWriter
+        self.summary_path = op.join(self.log_folder, 'summary')
+        if not op.exists(self.summary_path):
+            os.makedirs(self.summary_path)
+        
         
         set_seed(self.config.seed)
         
@@ -297,6 +306,8 @@ class Trainer(object):
          
     def train(self):
         
+        writer = SummaryWriter(self.summary_path)
+
         if op.exists(op.join(self.checkpoint_folder,
                              self._CHECKPOINT_NAME_TEMPLATE.format('last'))):
             raise RuntimeError("Please change the experiment name for a new experiment")
@@ -310,7 +321,7 @@ class Trainer(object):
             print("There is no checkpoint, train from scratch!")
     
         best_net_score = -2. # Val and save model
-        best_threshold = 0.
+        best_threshold = 0.9
         best_score_for_ReduceLROnPlateau = 0. # max mode for ReduceLROnPlateau lr_Scheduler
         
         epoch = self.epoch + 1
@@ -349,11 +360,11 @@ class Trainer(object):
                 # seg_flat = seg_maps.view(seg_maps.size(0), -1)
                 
                 loss = self.loss_function(seg_maps, labels)
-                
                 epoch_loss += loss.item()
-                    
-                
                 loss.backward()
+
+                epoch_len = len(self.train_loader.dataset) // self.train_loader.batch_size
+                writer.add_scalar("train_loss", loss.item(), epoch_len * epoch + batch_idx)
 
                 # Gradient Clipping
                 if epoch < self.Gradient_Clip_Epoch:
@@ -378,6 +389,17 @@ class Trainer(object):
                     metrics[metric][k] = metrics[metric][k] / (batch_idx + 1)
                     
 
+            writer.add_scalar('epoch_loss', epoch_loss, epoch)
+            writer.add_scalar('train-acc', metric['acc'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-DC', metric['DC'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-F1', metric['F1'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-JS', metric['JS'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-PC', metric['PC'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-SE', metric['SE'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-SP', metric['SP'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-NetScore', best_score_for_ReduceLROnPlateau/(batch_idx + 1), epoch)
+            
+
             # Print the log info 
             print("[Loss]: {:.4f}, [Net_Score]: {:.4f}, [Threshold]: {}".format(epoch_loss, best_score_for_ReduceLROnPlateau/(batch_idx + 1), best_threshold))
             print_metrics(metrics, mode='train')
@@ -394,6 +416,7 @@ class Trainer(object):
             # Validation
             if epoch % self.config.eval_frequency == 0:
                 net_score, threshold = self.validation(epoch)
+                writer.add_scalar("val_net_score", net_score, epoch)
                 
                 # Save the best model
                 if net_score > best_net_score:
@@ -407,6 +430,7 @@ class Trainer(object):
             self.epoch = self.epoch + 1
             epoch = epoch + 1          
         
+        writer.close()
         
         net_score, threshold = self.validation(epoch)
                     
