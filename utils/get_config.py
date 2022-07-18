@@ -70,7 +70,12 @@ def getConfig():
     
     # Basic Model Setting
     parser.add_argument('--model', type=str, default='DeepLabV3_ResNet101',
-                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, Trans_UNet]')
+                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, TransUNet]')
+
+
+    # Specific Model Setting
+    parser.add_argument('--vit_name', type=str, default='R50-ViT-B_16',
+                        help='vit_name for TransUNet')
     
     # Architecture Hyperparameters
 
