@@ -390,13 +390,13 @@ class Trainer(object):
                     
 
             writer.add_scalar('epoch_loss', epoch_loss, epoch)
-            writer.add_scalar('train-acc', metric['acc'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-DC', metric['DC'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-F1', metric['F1'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-JS', metric['JS'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-PC', metric['PC'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-SE', metric['SE'][f'{best_threshold}'], epoch)
-            writer.add_scalar('train-SP', metric['SP'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-acc', metrics['acc'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-DC', metrics['DC'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-F1', metrics['F1'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-JS', metrics['JS'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-PC', metrics['PC'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-SE', metrics['SE'][f'{best_threshold}'], epoch)
+            writer.add_scalar('train-SP', metrics['SP'][f'{best_threshold}'], epoch)
             writer.add_scalar('train-NetScore', best_score_for_ReduceLROnPlateau/(batch_idx + 1), epoch)
             
 
