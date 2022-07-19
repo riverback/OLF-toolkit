@@ -19,8 +19,8 @@ Data
 __pycache__
 .idea
 vis
-Data_Seg_OLF/*
-Data_Seg_OLF
+Data_Label_vis/*
+Data_Label_vis
 .vscode
 .vscode/*
 run_train.sh
