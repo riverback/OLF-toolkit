@@ -22,7 +22,7 @@ def get_loader(config):
     
     test_dataloader = data.DataLoader(
         dataset=OLF_SEG_DATASET.test_Dataset,
-        batch_size=config.batch_size,
+        batch_size=1,
         shuffle=False,
         num_workers=config.num_workers
     )

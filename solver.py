@@ -8,7 +8,7 @@ import time
 from torch.utils.tensorboard import SummaryWriter
 
 from utils.Logger import Logger
-from utils.get_config import getConfig
+
 from utils.pyutils import dumpclean, set_seed, print_metrics, print_config
 from model.build_model import build_model
 from datasets.dataloader import get_loader
@@ -23,9 +23,9 @@ class Trainer(object):
     _SPLITS = ('train', 'val', 'test')
     _EVAL_METRICS = ['loss', 'pIoU', 'F1_socre', 'Dice']
     
-    def __init__(self):
+    def __init__(self, config):
         # Get Config
-        self.config = getConfig()
+        self.config = config
         
         # Experiment Log
         self.log_folder = op.join('experiments', self.config.experiment_name)
