@@ -70,7 +70,7 @@ def getConfig():
     
     # Basic Model Setting
     parser.add_argument('--model', type=str, default='DeepLabV3_ResNet101',
-                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, TransUNet]')
+                        help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, TransUNet, AttU_Net]')
 
 
     # Specific Model Setting
