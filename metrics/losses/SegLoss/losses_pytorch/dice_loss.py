@@ -267,6 +267,7 @@ class SoftDiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, x, y, loss_mask=None):
+        
         shp_x = x.shape
 
         if self.batch_dice:
@@ -434,10 +435,11 @@ class DC_and_CE_loss(nn.Module):
         self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
 
     def forward(self, net_output, target):
-        dc_loss = self.dc(net_output, target)
+        dc_loss = 1 + self.dc(net_output, target)
         ce_loss = self.ce(net_output, target)
         if self.aggregate == "sum":
             result = ce_loss + dc_loss
+
         else:
             raise NotImplementedError("nah son") # reserved for other stuff (later)
         return result

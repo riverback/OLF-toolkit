@@ -13,6 +13,13 @@ class CrossentropyND(torch.nn.CrossEntropyLoss):
     Network has to have NO NONLINEARITY!
     """
     def forward(self, inp, target):
+        
+        if inp.shape == target.shape: # need to convert one-hot target (N, C, H, W, ...) to (N, H, W)
+            label = torch.zeros([target.size(0), target.size(2), target.size(3)]).cuda()
+            for index in range(target.size(1)):
+                label += target[:, index, :, :] * index
+            target = label            
+        
         target = target.long()
         num_classes = inp.size()[1]
 
@@ -27,7 +34,7 @@ class CrossentropyND(torch.nn.CrossEntropyLoss):
         inp = inp.contiguous()
         inp = inp.view(-1, num_classes)
 
-        target = target.view(-1,)
+        target = target.view(-1)
 
         return super(CrossentropyND, self).forward(inp, target)
 

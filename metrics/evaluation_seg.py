@@ -1,6 +1,7 @@
 import torch
 
 
+
 def get_accuray(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
     """ 
     get accuracy
@@ -9,6 +10,11 @@ def get_accuray(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
         GT ([type]): Ground Truth
         threshold (float, optional): threshold. Defaults to 0.5.
     """
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     SR = SR > threshold  # binarization -> Tensor[bool]
     # torch.max(input:Tensor)会返回最大的一个值，所以最后GT中只有一个值为True，其余全为False
     GT = GT == torch.max(GT)
@@ -21,6 +27,11 @@ def get_accuray(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
 
 def get_sensitivity(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
     """ Sensitivity == Recall """
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     SR = SR > threshold
     GT = GT == torch.max(GT)
 
@@ -35,6 +46,11 @@ def get_sensitivity(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
 
 
 def get_specificity(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     SR = SR > threshold
     GT = GT == torch.max(GT)
 
@@ -49,6 +65,11 @@ def get_specificity(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
 
 
 def get_precision(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     SR = SR > threshold
     GT = GT == torch.max(GT)
 
@@ -63,6 +84,11 @@ def get_precision(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
 
 
 def get_F1(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     # Sensitivity == Recall
     SE = get_sensitivity(SR, GT, threshold=threshold)
     PC = get_precision(SR, GT, threshold=threshold)
@@ -72,6 +98,11 @@ def get_F1(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
     return F1
 
 def get_JS(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     # JS : Jaccard similarity
     SR = SR > threshold
     GT = GT == torch.max(GT)
@@ -84,6 +115,11 @@ def get_JS(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
     return JS
 
 def get_DC(SR: torch.Tensor, GT: torch.Tensor, threshold=0.5):
+    
+    if SR.size(1) != 1:
+        SR = SR[:, 1:, :, :]
+        GT = GT[:, 1:, :, :]
+    
     # DC : Dice Coefficient
     SR = SR > threshold
     GT = GT == torch.max(GT)
