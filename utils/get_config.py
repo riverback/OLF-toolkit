@@ -7,7 +7,7 @@ def getConfig():
     parser = argparse.ArgumentParser()
     
     # Environment
-    parser.add_argument('--cuda_idx', type=str, default='7',
+    parser.add_argument('--cuda_idx', type=str, default='-1',
                         help='multi-gpu: "1,2" ')
     parser.add_argument('--seed', type=int, default=10,
                         help='')
@@ -18,17 +18,19 @@ def getConfig():
     parser.add_argument('--experiment_name', type=str, default='DEBUG',
                         help='name for experiment log')
     
+    # Task
+    parser.add_argument('--task', type=str, default='seg-do+olf',
+                        help='[olf-seg-only, seg-do+olf]')
+
     # DataSet and DataLoader
-    parser.add_argument('--task', type=str, default='olf-seg-only',
-                        help='[olf-seg-only, ]')
-    parser.add_argument('--batch_size', type=int, default=4, help='batch_size')
+    parser.add_argument('--batch_size', type=int, default=2, help='batch_size')
     parser.add_argument('--image_size', type=int, default=512, help='')
     parser.add_argument('--num_workers', type=int, default=16, help='num_workers')
     parser.add_argument('--std', type=float, default=1.,
                         help='normalize when preparing data')
     parser.add_argument('--mean', type=float, default=0.,
                         help='normalize when preparing data')
-    parser.add_argument('--aug_prob', type=float, default=0.3,
+    parser.add_argument('--aug_prob', type=float, default=1.0,
                         help='aug prob for train dataset')
     parser.add_argument('--contraster_factor', type=float, default=0.2,
                         help='Color Jetter factor')
@@ -38,15 +40,15 @@ def getConfig():
     # Basic Model Hyperparameters
     parser.add_argument('--image_channels', type=int, default=1, 
                         help='olf ct data is 1-channel')
-    parser.add_argument('--output_channels', type=int, default=1, 
-                        help='olf-seg-only=1, olf-do-seg=2')
+    parser.add_argument('--output_channels', type=int, default=3, 
+                        help='olf-seg-only=1, olf-do-seg=3')
     
     # Traing Parameter Settings
     parser.add_argument('--num_epochs', type=int, default=10, 
                         help='')
     parser.add_argument('--lr', type=float, default=0.001, 
                         help='learning rate')
-    parser.add_argument('--num_epochs_decay', type=int, default=30,
+    parser.add_argument('--num_epochs_decay', type=int, default=10,
                         help='start decay lr after these epochs')
     parser.add_argument('--Gradient_Clip_Epoch', type=int, default=10,
                         help='gradient clipping in fisrt several epochs')
@@ -62,14 +64,14 @@ def getConfig():
                         help='Adam settings')
 
     # Loss Function
-    parser.add_argument('--loss_type', type=str, default='SSLoss')
+    parser.add_argument('--loss_type', type=str, default='DC_and_CE_loss')
     
     # Val Settings
     parser.add_argument('--eval_frequency', type=int, default=2,
                         help='eval frequency')
     
     # Basic Model Setting
-    parser.add_argument('--model', type=str, default='DeepLabV3_ResNet101',
+    parser.add_argument('--model', type=str, default='U_Net',
                         help='[U_Net, DeepLabV3_ResNet50, DeepLabV3_ResNet101, TransUNet, AttU_Net]')
 
 

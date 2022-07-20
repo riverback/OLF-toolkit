@@ -1,3 +1,4 @@
+from bdb import Breakpoint
 import torch
 import torch.nn as nn
 import torchvision
@@ -16,7 +17,6 @@ from metrics.losses.loss_function import FocalLoss, BCEFocalLoss
 from metrics.evaluation_seg import get_accuray, get_sensitivity, get_specificity, get_precision, get_F1, get_DC, get_JS
 from metrics.losses.SegLoss.losses_pytorch.dice_loss import DC_and_topk_loss, SoftDiceLoss, DC_and_CE_loss, FocalTversky_loss, IoULoss, SSLoss
 from metrics.losses.SegLoss.losses_pytorch.focal_loss import FocalLoss
-
 
 class Trainer(object):
     _CHECKPOINT_NAME_TEMPLATE = 'checkpoint_{}.pth'
@@ -126,7 +126,7 @@ class Trainer(object):
         elif loss_type == 'IoULoss':
             self.loss_function = IoULoss().cuda()
         elif loss_type == 'DC_and_CE_loss':
-            self.loss_function = DC_and_CE_loss({'batch_dice': False, 'smooth': 1e-5, 'do_bg': False}, {}).cuda()
+            self.loss_function = DC_and_CE_loss({'batch_dice': True, 'smooth': 1e-5, 'do_bg': False}, {'weight': torch.tensor([0.01, 0.33, 0.66]), 'reduction': 'mean'}).cuda()
         elif loss_type == 'DC_and_topk_loss':
             self.loss_function = DC_and_topk_loss({'batch_dice': True, 'smooth': 1e-5, 'do_bg': False}, {'k': 10}).cuda()
         elif loss_type == 'SSLoss':
@@ -216,16 +216,17 @@ class Trainer(object):
             labels = labels.to(self.device)
 
             seg_maps = self.net(images)
+            seg_maps_prob = torch.sigmoid(seg_maps)
             
 
             for threshold in self.threshold_list:
-                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps, labels, threshold)
-                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps, labels, threshold)
-                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps, labels, threshold)
-                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps, labels, threshold)
-                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
-                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
-                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
+                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps_prob, labels, threshold)
+                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps_prob, labels, threshold)
+                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps_prob, labels, threshold)
+                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps_prob, labels, threshold)
+                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps_prob, labels, threshold)
+                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps_prob, labels, threshold)
+                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps_prob, labels, threshold)
                 sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
                 if sum_score > best_net_score:
                     best_net_score, best_threshold = sum_score, threshold
@@ -243,7 +244,7 @@ class Trainer(object):
 
     def test(self):
         print("\nStart Testing...")
-
+        print("Generating Visualization for Test Stage...")
         self.net.eval()
         self._load_checkpoint(checkpoint_type='best')
 
@@ -266,40 +267,62 @@ class Trainer(object):
             labels = labels.to(self.device)
 
             seg_maps = self.net(images)
+            seg_maps_prob = torch.sigmoid(seg_maps)
 
             for threshold in self.threshold_list:
-                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps, labels, threshold)
-                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps, labels, threshold)
-                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps, labels, threshold)
-                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps, labels, threshold)
-                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
-                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
-                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
+                acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps_prob, labels, threshold)
+                DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps_prob, labels, threshold)
+                F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps_prob, labels, threshold)
+                JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps_prob, labels, threshold)
+                PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps_prob, labels, threshold)
+                SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps_prob, labels, threshold)
+                SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps_prob, labels, threshold)
                 sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
                 if sum_score > best_net_score:
                     best_net_score, best_threshold = sum_score, threshold
 
             SR_current_path = op.join(self.test_vis_folder, f"{batch_idx}_SegResults.png")
-            RS_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Results_Vis.png")
+            RS_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Label_Vis.png")
             IMG_current_path = op.join(self.test_vis_folder, f"{batch_idx}_Input.png")
+            
+            # 保存输入原始图像
             torchvision.utils.save_image(images.data.cpu(), IMG_current_path)
 
-            torchvision.utils.save_image(seg_maps.data.cpu(), SR_current_path)
+            # 保存分割结果
+            seg_results = seg_maps_prob.argmax(dim=1)
+            rgb = torch.tensor([
+                [0., 0., 0.], # channel one, class - background black
+                [60/255, 180/255, 75/255], # channel two, class - olf green
+                [250/255, 190/255, 212/255], # channel three, class - do pink
+            ])
+            seg_png = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
+            
+            for batch in range(seg_results.size(0)):
+                for h in range(seg_results.size(1)):
+                    for w in range(seg_results.size(2)):
+                        seg_png[batch, :, h, w] = rgb[seg_results[batch, h, w]]
+            
+            torchvision.utils.save_image(seg_png.data.cpu(), SR_current_path)
+            
+            # 可视化label
+            
+            torchvision.utils.save_image(labels.data.cpu(), RS_current_path)
+            '''
             save_results = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
-            RS = seg_maps.clone()
+            RS = seg_maps_prob.clone()
             RS[RS > best_threshold] = 1
             RS[RS != 1] = 0
             save_results[:, 0, :, :] = labels[:, 0, :, :].data.cpu()
             save_results[:, 1, :, :] = RS[:, 0, :, :].data.cpu()
-            torchvision.utils.save_image(save_results.data.cpu(), RS_current_path)
-
+            torchvision.utils.save_image((save_results/save_results.max()).data.cpu(), RS_current_path)
+            '''
         for metric in metrics.keys():
             for k in metrics[metric].keys():
                 metrics[metric][k] = metrics[metric][k] / (batch_idx + 1)
         
         print_metrics(metrics, mode='test')
 
-        print("Generating Visualization for Test Stage...")
+        
         print("Use threshold {}".format(best_threshold))
 
 
@@ -325,6 +348,9 @@ class Trainer(object):
         best_score_for_ReduceLROnPlateau = 0. # max mode for ReduceLROnPlateau lr_Scheduler
         
         epoch = self.epoch + 1
+        
+        print("\nStart Trainig... [Time]: {}".format(time.ctime()))
+        
         while epoch <= self.num_epochs:
         
             print("\n\nStart Training Epoch-{} ...".format(epoch))
@@ -349,11 +375,13 @@ class Trainer(object):
                 
                 images = images.to(self.device)
                 labels = labels.to(self.device)
+
                 # print(images.shape, labels.shape)
                 # labels_flat = labels.view(labels.size(0), -1) # 展平用于算指标和loss
             
                 seg_maps = self.net(images)
-                seg_maps = torch.sigmoid(seg_maps)
+                
+                seg_maps_prob = torch.sigmoid(seg_maps)
                 # print(seg_maps.max(), seg_maps.min())
                 # seg_probs = torch.sigmoid(seg_maps)
                 # seg_flat = seg_probs.view(seg_probs.size(0), -1)
@@ -373,13 +401,13 @@ class Trainer(object):
                 self.optimizer.step()
                 
                 for threshold in self.threshold_list:
-                    acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps, labels, threshold)
-                    DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps, labels, threshold)
-                    F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps, labels, threshold)
-                    JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps, labels, threshold)
-                    PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps, labels, threshold)
-                    SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps, labels, threshold)
-                    SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps, labels, threshold)
+                    acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps_prob, labels, threshold)
+                    DC = metrics['DC'][f'{threshold}']  = metrics['DC'][f'{threshold}'] + get_DC(seg_maps_prob, labels, threshold)
+                    F1 = metrics['F1'][f'{threshold}']  = metrics['F1'][f'{threshold}'] + get_F1(seg_maps_prob, labels, threshold)
+                    JS = metrics['JS'][f'{threshold}']  = metrics['JS'][f'{threshold}']+ get_JS(seg_maps_prob, labels, threshold)
+                    PC = metrics['PC'][f'{threshold}']  = metrics['PC'][f'{threshold}'] + get_precision(seg_maps_prob, labels, threshold)
+                    SE = metrics['SE'][f'{threshold}']  = metrics['SE'][f'{threshold}'] + get_sensitivity(seg_maps_prob, labels, threshold)
+                    SP = metrics['SP'][f'{threshold}']  = metrics['SP'][f'{threshold}'] + get_specificity(seg_maps_prob, labels, threshold)
                     sum_score = DC + F1 + JS + PC + SE # 没有用 acc 和 SP 因为正样本太少了
                     if sum_score > best_score_for_ReduceLROnPlateau:
                         best_score_for_ReduceLROnPlateau, best_threshold = sum_score, threshold
@@ -388,7 +416,7 @@ class Trainer(object):
                 for k in metrics[metric].keys():
                     metrics[metric][k] = metrics[metric][k] / (batch_idx + 1)
                     
-
+            
             writer.add_scalar('epoch_loss', epoch_loss, epoch)
             writer.add_scalar('train-acc', metrics['acc'][f'{best_threshold}'], epoch)
             writer.add_scalar('train-DC', metrics['DC'][f'{best_threshold}'], epoch)
@@ -398,7 +426,7 @@ class Trainer(object):
             writer.add_scalar('train-SE', metrics['SE'][f'{best_threshold}'], epoch)
             writer.add_scalar('train-SP', metrics['SP'][f'{best_threshold}'], epoch)
             writer.add_scalar('train-NetScore', best_score_for_ReduceLROnPlateau/(batch_idx + 1), epoch)
-            
+
 
             # Print the log info 
             print("[Loss]: {:.4f}, [Net_Score]: {:.4f}, [Threshold]: {}".format(epoch_loss, best_score_for_ReduceLROnPlateau/(batch_idx + 1), best_threshold))
@@ -430,12 +458,15 @@ class Trainer(object):
             self.epoch = self.epoch + 1
             epoch = epoch + 1          
         
+            # raise Breakpoint("DEBUG")
+
         writer.close()
         
-        net_score, threshold = self.validation(epoch)
+        net_score, threshold = self.validation(epoch-1)
                     
         self.test()      
-            
+        
+        print("\nFinish Training...[Time]: {}".format(time.ctime()))
                 
         
         
