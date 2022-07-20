@@ -22,9 +22,9 @@ def nii2seg_olf_label(config):
     if len(volume_data.shape) != 3:
         raise NotImplementedError("label should be a 3-D matrix")
     
-    volume_data = np.flip(volume_data, 2)
+    volume_data = np.flip(volume_data, 2) # 因为z轴和习惯的方向是反过来的
     
-    volume_data[volume_data > 0.] = 1
+    volume_data[volume_data > 0.] = 1 # 骨化块全标成1
     
     l, w, h = volume_data.shape
     

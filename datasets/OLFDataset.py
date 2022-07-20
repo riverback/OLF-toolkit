@@ -1,12 +1,13 @@
 import os
 from os.path import join as ospj
+from typing import List
 from torch.utils import data
 from torchvision import transforms as T
 from torchvision.transforms import functional as F
 from PIL import Image
 import nibabel as nib
 import numpy as np
-import SimpleITK as sitk
+import torch
 import random
 from copy import deepcopy
 
@@ -15,7 +16,7 @@ from datasets.dcmutils import normalize_minmax
 
 
 class OLFDataset(data.Dataset):
-    def __init__(self, data, mode, std=None, mean=None):
+    def __init__(self, data: List, mode, std=None, mean=None):
         super().__init__()
         
         self.mode = mode
@@ -25,7 +26,51 @@ class OLFDataset(data.Dataset):
         self.image_size = 512
         
         self.Data = deepcopy(data)
+        
+        if self.mode == 'train':
+            for index in range(len(self.Data)):
+                image, label = self.Data[index]
+                image, label = torch.from_numpy(image), torch.from_numpy(label)
+                image = image.unsqueeze(0).type(torch.FloatTensor)
+                
+                Transform = []
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                image, label = Transform(image), Transform(label)
+                Transform = []
+                if self.mode is not None and self.std is not None:
+                    Transform.append(T.Normalize(self.mean, self.std))
+                    Transform = T.Compose(Transform)
+                    image, label = Transform(image), Transform(label)
+                self.Data[index] = [image, label]
+                
+                
+                image_, label_ = deepcopy(image), deepcopy(label)
 
+                Transform = []
+                RotationRange = random.randint(-10, 10)
+                Transform.append(T.RandomRotation((RotationRange, RotationRange)))
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                self.Data.append([Transform(image_), Transform(label_)])
+        
+        else:
+            for index in range(len(self.Data)):
+                image, label = self.Data[index]
+                image, label = torch.from_numpy(image), torch.from_numpy(label)
+                image = image.unsqueeze(0).type(torch.FloatTensor)
+                
+                Transform = []
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                image, label = Transform(image), Transform(label)
+                Transform = []
+                if self.mode is not None and self.std is not None:
+                    Transform.append(T.Normalize(self.mean, self.std))
+                    Transform = T.Compose(Transform)
+                    image, label = Transform(image), Transform(label)
+                self.Data[index] = [image, label]
+                
         if self.__len__() % 2 != 0:
             self.Data = self.Data[:-1]
 
@@ -35,23 +80,7 @@ class OLFDataset(data.Dataset):
     def __getitem__(self, index):
         
         image, label = self.Data[index]
-            
-        image, label = Image.fromarray(image), Image.fromarray(label)
-        
-        Transform = []
-        '''
-        if self.mode == 'train' and random.random() < 0.3:
-            RotationRange = random.randint(-10, 10)
-            Transform.append(T.RandomRotation((RotationRange, RotationRange)))
-        '''
-        Transform.append(T.Resize((self.image_size, self.image_size)))
-        Transform.append(T.ToTensor())
-        if self.mode is not None and self.std is not None:
-            Transform.append(T.Normalize(self.mean, self.std))
-        Transform = T.Compose(Transform)
-        
-        image, label = Transform(image), Transform(label)
-        
+
         return image, label
         
         
@@ -59,7 +88,7 @@ class OLFDataset(data.Dataset):
         return len(self.Data)
     
     @staticmethod
-    def npy2list(arr):
+    def npy2D2list(arr):
         l = []
         for n in range(arr.shape[0]):
             l.append(arr[n, :, :])
@@ -71,7 +100,7 @@ class OLF_SEG_Dataset(object):
         
         # Config 
         self.config = config
-        self.split_prob = {'train': 0.4, 'val': 0.6, 'test': 1.0}
+        self.split_prob = {'train': 0.34, 'val': 0.67, 'test': 1.0}
         
         # Path
         self.root = config.olf_root
@@ -85,7 +114,12 @@ class OLF_SEG_Dataset(object):
         
         if self.config.task == 'olf-seg-only':
             self.GT_paths = [ospj(folder_path, 'Label_seg_olf.npy') for folder_path in self.GT_folder_paths]    
-            
+        elif self.config.task == 'seg-do+olf':
+            self.GT_paths = [ospj(folder_path, 'Label_seg_olf_and_do.npy') for folder_path in self.GT_folder_paths][:2] # 001 002, 003还不知道第几节是DO
+            self.RAW_paths = self.RAW_paths[:2] # 没有003
+        
+        print(f"GT: {self.GT_paths}\nRAW: {self.RAW_paths}")
+
         self.DataPackage = {
             'train': [],
             'val': [],
@@ -93,23 +127,32 @@ class OLF_SEG_Dataset(object):
         }
         
         for i in range(len(self.RAW_paths)): # 每次读取一整个文件夹的数据
+
             GT = np.load(self.GT_paths[i])
-            # if GT.max() != 1:
-            #     raise ValueError("GT for seg-olf only should have max value = 1")
+
             DCM = np.load(self.RAW_paths[i])
+            
+            print(GT.shape, DCM.shape)
+
+            if GT.max() > 1. and self.config.task == 'olf-seg-only':
+                raise ValueError("GT for seg-olf only should have max value = 1")
+
             if DCM.max() > 1.:
                 DCM = normalize_minmax(DCM)
+
             for n in range(*OLF_SLICE[i+1]): # 目前数据少,采用随机分配的方式划分,之后这里直接本地划分文件夹就可以了,目前这种方式有数据泄露的嫌疑
                 p = random.random()
                 if p < self.split_prob['train']:
-                    self.DataPackage['train'].append([DCM[n, :, :], GT[n, :, :]])
+                    self.DataPackage['train'].append([DCM[n], GT[n]])
                 elif p < self.split_prob['val']:
-                    self.DataPackage['val'].append([DCM[n, :, :], GT[n, :, :]])
+                    self.DataPackage['val'].append([DCM[n], GT[n]])
                 else:
-                    self.DataPackage['test'].append([DCM[n, :, :], GT[n, :, :]])
+                    self.DataPackage['test'].append([DCM[n], GT[n]])
+
         
         self.__aug_train_set() # 对训练集进行数据增广
-        
+
+
         self.train_Dataset = OLFDataset(data=self.DataPackage['train'], mode='train', std=config.std, mean=config.mean)
         self.val_Dataset = OLFDataset(data=self.DataPackage['val'], mode='val')
         self.test_Dataset = OLFDataset(data=self.DataPackage['test'], mode='test')
@@ -121,24 +164,32 @@ class OLF_SEG_Dataset(object):
         for idx in range(len(self.DataPackage['train'])):
             if random.random() < p_aug:
                 ori_img, ori_label = self.DataPackage['train'][idx]
-                # left/right flip
-                self.DataPackage['train'].append([np.fliplr(ori_img), np.fliplr(ori_label)])
-                # up/down flip
-                self.DataPackage['train'].append([np.flipud(ori_img), np.flipud(ori_label)])
-                # left,up / right,down
-                self.DataPackage['train'].append([np.fliplr(np.flipud(ori_img)), np.fliplr(np.flipud(ori_label))])
+
                 # Color Jetter
-                self.DataPackage['train'].append([ori_img*self.config.contraster_factor+self.config.brighness_factor, ori_label])
+                self.DataPackage['train'].append([self.__random_color_jetter(ori_img), ori_label])
                 # Adding Noise
                 self.DataPackage['train'].append([self.__add_noise(ori_img, self.config.seed), ori_label])
-                # Rotation
-                k = RotationDegree[random.randint(0, 3)]
-                self.DataPackage['train'].append([np.rot90(ori_img, k), np.rot90(ori_label, k)])
                 # Shift
                 shift_range = random.randint(50, 100)
                 self.DataPackage['train'].append([self.__shift_arr(ori_img, shift_range), self.__shift_arr(ori_label, shift_range)])
-        
-    
+                
+                # Rotation
+                # left/right flip
+                # up/down flip
+                # left,up / right,down
+                k = RotationDegree[random.randint(0, 3)]
+                if len(ori_label.shape) == 2:
+                    self.DataPackage['train'].append([np.rot90(ori_img, k, axes=(0, 1)), np.rot90(ori_label, k, axes=(0, 1))])
+                    self.DataPackage['train'].append([np.flip(ori_img, 1), np.flip(ori_label, 1)])
+                    self.DataPackage['train'].append([np.flip(ori_img, 0), np.flip(ori_label, 0)])
+                    self.DataPackage['train'].append([np.flip(np.flip(ori_img, 0), 1), np.flip(np.flip(ori_label, 0), 1)])
+                else:
+                    self.DataPackage['train'].append([np.rot90(ori_img, k, axes=(0, 1)), np.rot90(ori_label, k, axes=(1, 2))])
+                    self.DataPackage['train'].append([np.flip(ori_img, 1), np.flip(ori_label, 2)])
+                    self.DataPackage['train'].append([np.flip(ori_img, 0), np.flip(ori_label, 1)])
+                    self.DataPackage['train'].append([np.flip(np.flip(ori_img, 0), 1), np.flip(np.flip(ori_label, 1), 2)])
+
+
     @staticmethod
     def __add_noise(arr, seed):
         rng = np.random.default_rng(seed)
@@ -152,9 +203,17 @@ class OLF_SEG_Dataset(object):
     def __shift_arr(arr, num):
         assert num >= 0
         result = np.zeros_like(arr)
-        result[:, :-num] = arr[:, num:]
+        if len(arr.shape) == 2:
+            result[:, :-num] = arr[:, num:]
+        elif len(arr.shape) == 3:
+            result[:, :-num, :] = arr[:, num:, :]
         return result
-            
+    
+    @staticmethod
+    def __random_color_jetter(arr):
+        brightness_factor = random.uniform(0.2, 0.4)
+        contraster_factor = random.uniform(0.2, 0.6)
+        return arr * contraster_factor + brightness_factor
             
             
 
