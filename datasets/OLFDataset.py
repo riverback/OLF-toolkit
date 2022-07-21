@@ -13,6 +13,7 @@ from copy import deepcopy
 
 from datasets.seg_olf_slice_info import OLF_SLICE
 from datasets.dcmutils import normalize_minmax
+from datasets.prepare_classify_and_cam import ReadDcmSequence_XY_Pydicom
 
 
 class OLFDataset(data.Dataset):
@@ -41,7 +42,7 @@ class OLFDataset(data.Dataset):
                 if self.mode is not None and self.std is not None:
                     Transform.append(T.Normalize(self.mean, self.std))
                     Transform = T.Compose(Transform)
-                    image, label = Transform(image), Transform(label)
+                    image= Transform(image)
                 self.Data[index] = [image, label]
                 
                 
@@ -68,7 +69,7 @@ class OLFDataset(data.Dataset):
                 if self.mode is not None and self.std is not None:
                     Transform.append(T.Normalize(self.mean, self.std))
                     Transform = T.Compose(Transform)
-                    image, label = Transform(image), Transform(label)
+                    image = Transform(image)
                 self.Data[index] = [image, label]
                 
         if self.__len__() % 2 != 0:
@@ -214,8 +215,190 @@ class OLF_SEG_Dataset(object):
         brightness_factor = random.uniform(0.2, 0.4)
         contraster_factor = random.uniform(0.2, 0.6)
         return arr * contraster_factor + brightness_factor
-            
-            
+
+class Classify_Dataset(data.Dataset):
+    def __init__(self, mode, Data: List, std, mean):
+        super().__init__()
+        
+        self.mode = mode
+        self.std = std
+        self.mean = mean
+        
+        self.image_size = 512
+        
+        self.Data = deepcopy(Data)
+
+        if self.mode == 'train':
+            for index in range(len(self.Data)):
+                image, label_encode, label = self.Data[index]
+                image, label_encode, label = torch.tensor(image), torch.tensor(label_encode), torch.tensor(label)
+                image = image.unsqueeze(0).type(torch.FloatTensor)                                
+
+                Transform = []
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                image = Transform(image)
+                Transform = []
+                if self.mode is not None and self.std is not None:
+                    Transform.append(T.Normalize(self.mean, self.std))
+                    Transform = T.Compose(Transform)
+                    image= Transform(image)
+                self.Data[index] = [image, label_encode, label]
+                
+                
+                image_ = deepcopy(image)
+
+                Transform = []
+                RotationRange = random.randint(-10, 10)
+                Transform.append(T.RandomRotation((RotationRange, RotationRange)))
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                self.Data.append([Transform(image_), label_encode, label])
+
+        else:
+            for index in range(len(self.Data)):
+                image, label_encode, label = self.Data[index]
+                image, label_encode, label = torch.tensor(image), torch.tensor(label_encode), torch.tensor(label)
+                image = image.unsqueeze(0).type(torch.FloatTensor)                                
+
+                Transform = []
+                Transform.append(T.Resize((self.image_size, self.image_size)))
+                Transform = T.Compose(Transform)
+                image = Transform(image)
+                Transform = []
+                if self.mode is not None and self.std is not None:
+                    Transform.append(T.Normalize(self.mean, self.std))
+                    Transform = T.Compose(Transform)
+                    image= Transform(image)
+                self.Data[index] = [image, label_encode, label]
+
+    def __getitem__(self, index):
+        image, label_encode, label = self.Data[index]
+
+        return image, label_encode, label
+        
+
+class Classify_XY_Dataset(object):
+    def __init__(self, config):
+        super().__init__()     
+
+        # Config
+        self.config = config
+
+        self.root = config.olf_root
+        self.GT_root = ospj(self.root, 'GT')
+        self.RAW_root = ospj(self.root, 'RAW')
+
+        self.GT_folder_paths = [ospj(self.GT_root, path) for path in  os.listdir(self.GT_root)] # 001 002 ...
+        # self.GT_folder_paths.sort()
+        self.GT_paths = [ospj(ospj(self.GT_root, '001'), 'Label_class3_xy.txt'), ospj(ospj(self.GT_root, '002'), 'Label_class3_xy.txt')]
+        self.RAW_paths = [ospj(self.RAW_root, '001'), ospj(self.RAW_root, '002')]
+        # self.RAW_paths.sort()
+
+
+        if len(self.GT_paths) != len(self.RAW_paths):
+            raise ValueError("GT size is not equal to RAW size")
+
+        self.Data = []
+
+        for i in range(len(self.GT_paths)):
+            label_f = open(self.GT_paths[i], 'r')
+            dcm_data = ReadDcmSequence_XY_Pydicom(self.RAW_paths[i])
+
+            for index in range(dcm_data.shape[0]):
+                label = int(label_f[index].strip('\n').split()[-1])
+                label_encode = self.make_ont_hot(label)
+                label = [label]
+                dcm = dcm_data[index]
+                self.Data.append([dcm, label_encode, label])
+
+            label_f.close()
+
+        self.Data = random.shuffle(self.Data)
+
+        data_cnt = len(self.Data)
+        split_train, split_val = int(0.33*data_cnt), int(0.67*data_cnt)
+
+        self.DataPackage = {
+            'train': self.Data[:split_train],
+            'val': self.Data[split_train:split_val],
+            'test': self.Data[split_val:],
+        }
+
+        self._aug_train()
+
+        self.train_Dataset = Classify_Dataset(mode='train', Data=self.DataPackage['train'], std=config.std, mean=config.mean)
+        self.val_Dataset = Classify_Dataset(mode='val', data=self.DataPackage['val'])
+        self.test_Dataset = Classify_Dataset(mode='test', data=self.DataPackage['test'])
+
+
+    def _aug_train(self):
+        print("Data Augmentation")
+        p_aug = self.config.aug_prob
+        RotationDegree = [-1, 1, 2, 3]
+        for idx in range(len(self.DataPackage['train'])):
+            if random.random() < p_aug:
+                ori_img, label_encode, label = self.DataPackage['train'][idx]
+
+                # Color Jetter
+                self.DataPackage['train'].append([self.__random_color_jetter(ori_img), label_encode, label])
+                # Adding Noise
+                self.DataPackage['train'].append([self.__add_noise(ori_img, self.config.seed), label_encode, label])
+                # Shift
+                shift_range = random.randint(50, 100)
+                self.DataPackage['train'].append([self.__shift_arr(ori_img, shift_range), label_encode, label])
+                
+                # Rotation
+                # left/right flip
+                # up/down flip
+                # left,up / right,down
+                k = RotationDegree[random.randint(0, 3)]
+
+                self.DataPackage['train'].append([np.rot90(ori_img, k, axes=(0, 1)), label_encode, label])
+                self.DataPackage['train'].append([np.flip(ori_img, 1), label_encode, label])
+                self.DataPackage['train'].append([np.flip(ori_img, 0), label_encode, label])
+                self.DataPackage['train'].append([np.flip(np.flip(ori_img, 0), 1), label_encode, label])
+
+
+    @staticmethod
+    def __add_noise(arr, seed):
+        rng = np.random.default_rng(seed)
+        noise = rng.random(arr.shape)
+        arr += noise
+        min_v, max_v = arr.min(), arr.max()
+        arr = (arr - min_v) / (max_v - min_v)
+        return arr
+    
+    @staticmethod
+    def __shift_arr(arr, num):
+        assert num >= 0
+        result = np.zeros_like(arr)
+        if len(arr.shape) == 2:
+            result[:, :-num] = arr[:, num:]
+        elif len(arr.shape) == 3:
+            result[:, :-num, :] = arr[:, num:, :]
+        return result
+    
+    @staticmethod
+    def __random_color_jetter(arr):
+        brightness_factor = random.uniform(0.2, 0.4)
+        contraster_factor = random.uniform(0.2, 0.6)
+        return arr * contraster_factor + brightness_factor
+
+
+    @staticmethod
+    def make_ont_hot(label: int):
+        """
+        label:
+            0 - healthy
+            1 - olf
+            2 - do
+        """
+        label_encoded = torch.zeors([3])
+        label_encoded[label] = float(label)
+
+        return label_encoded
+
 
 if __name__ == '__main__':
     import argparse
