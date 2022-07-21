@@ -20,7 +20,7 @@ def getConfig():
     
     # Task
     parser.add_argument('--task', type=str, default='seg-do+olf',
-                        help='[olf-seg-only, seg-do+olf]')
+                        help='[olf-seg-only, seg-do+olf, Classify_XY]')
 
     # DataSet and DataLoader
     parser.add_argument('--batch_size', type=int, default=2, help='batch_size')

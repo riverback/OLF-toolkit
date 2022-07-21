@@ -268,6 +268,7 @@ class Trainer(object):
 
             seg_maps = self.net(images)
             seg_maps_prob = torch.sigmoid(seg_maps)
+            # seg_maps_prob = torch.softmax(seg_maps, dim=1)
 
             for threshold in self.threshold_list:
                 acc = metrics['acc'][f'{threshold}'] = metrics['acc'][f'{threshold}'] + get_accuray(seg_maps_prob, labels, threshold)
