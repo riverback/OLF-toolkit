@@ -180,6 +180,64 @@ class Trainer(object):
         """Zero the gradient buffers"""
         self.net.zero_grad()
 
+    def validation(self, epoch, writer: SummaryWriter):
+        print("\nStart Validation Epoch {}... [Time]: {}".format(epoch, time.ctime()))
+
+        self.net.eval()
+
+        acc = 0.
+        DC = 0.
+        F1 = 0.
+        PC = 0.
+        SP = 0.
+        Recall = 0.
+
+        for batch_idx, (images, labels_encode, labels) in enumerate(self.val_loader):
+            
+            images = images.to(self.device)
+            labels = labels.long().squeeze().to(self.device)
+            labels_encode = labels_encode.long().to(self.device)
+
+            predicts = self.net(images)
+            predicts_output = predicts.argmax(dim=1)
+
+            acc += accuracy(predicts_output, labels, num_classes=self.config.output_channels)
+            DC += dice_score(predicts, labels)
+            F1 += f1_score(predicts_output, labels, num_classes=self.config.output_channels)
+            PC += precision(predicts_output, labels, num_classes=self.config.output_channels)
+            SP += specificity(predicts_output, labels, num_classes=self.config.output_channels)
+            Recall += recall(predicts_output, labels, num_classes=self.config.output_channels)
+
+        acc /= (batch_idx + 1)
+        DC /= (batch_idx + 1)
+        F1 /= (batch_idx + 1)
+        PC /= (batch_idx + 1)
+        SP /= (batch_idx + 1)
+        Recall /= (batch_idx + 1)
+        sum_score = (acc + DC + F1 + PC + SP + Recall) / 6.
+        print('''
+            [Accuracy]:     {:.4f}
+            [Precision]:    {:.4f}
+            [Specificity]:  {:.4f}
+            [Recall]:       {:.4f}
+            [F1-score]:     {:.4f}
+            [Dice-score]:   {:.4f}
+            [Net-score]:    {:.4f}
+            '''.format(acc, PC, SP, Recall, F1, DC, sum_score))
+
+        writer.add_scalar('train-acc', acc, epoch)
+        writer.add_scalar('train-DC', DC, epoch)
+        writer.add_scalar('train-F1', F1, epoch)
+        writer.add_scalar('train-PC', PC, epoch)
+        writer.add_scalar('train-SP', SP, epoch)
+        writer.add_scalar('train-Recall', Recall, epoch)
+        writer.add_scalar('train-score', sum_score, epoch)
+
+        return sum_score
+
+
+    def test(self):
+        print("not implemented yet")
 
 
     def train(self):
@@ -206,7 +264,7 @@ class Trainer(object):
         
         while epoch <= self.num_epochs:
 
-            print("\n\nStart Training Epoch-{} ...[Time]: {}".format(epoch, time.ctime()))
+            print("\n\nStart Training Epoch-[{}/{}] ...[Time]: {}".format(epoch, self.num_epochs, time.ctime()))
 
             self.net.train(True)
 
@@ -257,7 +315,8 @@ class Trainer(object):
             PC /= (batch_idx + 1)
             SP /= (batch_idx + 1)
             Recall /= (batch_idx + 1)
-            sum_score = acc + DC + F1 + PC + SP + Recall
+            sum_score = (acc + DC + F1 + PC + SP + Recall) / 6.
+
             if sum_score > best_score_for_ReduceLROnPlateau:
                 best_score_for_ReduceLROnPlateau = sum_score
 
@@ -268,6 +327,7 @@ class Trainer(object):
             writer.add_scalar('train-PC', PC, epoch)
             writer.add_scalar('train-SP', SP, epoch)
             writer.add_scalar('train-Recall', Recall, epoch)
+            writer.add_scalar('train-score', sum_score, epoch)
 
             print('''
             [Loss]:         {:.4f}
@@ -278,7 +338,7 @@ class Trainer(object):
             [F1-score]:     {:.4f}
             [Dice-score]:   {:.4f}
             [Net-score]:    {:.4f}
-            '''.format(epoch_loss, acc, PC, SP, Recall, F1, DC, best_score_for_ReduceLROnPlateau))
+            '''.format(epoch_loss, acc, PC, SP, Recall, F1, DC, sum_score))
 
             if self.config.lr_Scheduler != 'ReduceLROnPlateau':
                     self.lr_Scheduler.step()
@@ -288,33 +348,30 @@ class Trainer(object):
 
             # Save Checkpoint
             self.save_checkpoint(epoch)
-            '''
+            
             # Validation
             if epoch % self.config.eval_frequency == 0:
-                net_score, threshold = self.validation(epoch)
-                writer.add_scalar("val_net_score", net_score, epoch)
+                net_score = self.validation(epoch, writer)
                 
                 # Save the best model
                 if net_score > best_net_score:
                     best_net_score = net_score
-                    best_threshold = threshold
                     self.save_checkpoint(epoch, tag='best')
-                    ###
-                    # 这里要考虑一下保存的时候要记录最佳的threshold是多少
-            '''        
+            
                     
             self.epoch = self.epoch + 1
             epoch = epoch + 1          
-        
-            # raise Breakpoint("DEBUG")
+
             
 
         writer.close()
-        '''
-        net_score, threshold = self.validation(epoch-1)
-                    
+        if (epoch - 1) % self.config.eval_frequency != 0:
+            net_score = self.validation(epoch-1, writer)
+
+        print("\nFinish Training...[Time]: {}".format(time.ctime()))
+
         self.test()      
         
         
-        '''        
-        print("\nFinish Training...[Time]: {}".format(time.ctime()))
+             
+        
