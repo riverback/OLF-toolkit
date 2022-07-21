@@ -306,7 +306,7 @@ class Trainer(object):
             
             # 可视化label
             
-            torchvision.utils.save_image(labels.data.cpu(), RS_current_path)
+            torchvision.utils.save_image(labels.data.cpu(), RS_current_path) # 红色背景 # 蓝色do # 绿色olf
             '''
             save_results = torch.zeros(seg_maps.size(0), 3, seg_maps.size(2), seg_maps.size(3))
             RS = seg_maps_prob.clone()
