@@ -247,6 +247,7 @@ class Trainer(object):
         print("Generating Visualization for Test Stage...")
         self.net.eval()
         self._load_checkpoint(checkpoint_type='best')
+        self.net.eval()
 
         metrics = {
             'acc':  {'{}'.format(k): 0. for k in self.threshold_list},

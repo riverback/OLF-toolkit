@@ -1,8 +1,13 @@
-from solver import Trainer
+from solver import Trainer as Trainer_seg
+from classify_cam import Trainer as Trainer_cla
 from utils.get_config import getConfig
 
 def main(config):
-    trainer = Trainer(config)
+    if config.task != 'Classify_XY':
+        trainer = Trainer_seg(config)
+    else:
+        trainer = Trainer_cla(config)
+    
     trainer.train()
     
     
