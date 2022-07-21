@@ -26,7 +26,7 @@ def ReadImageSequenceSitk(data_folder):
 
     return slices
 
-
+# 负责把一个文件下的dcm文件读取并以由每个slice组成的list形式返回
 def load_scan(dcm_folder):
     dcm_paths = os.listdir(dcm_folder)
     slices = [pydicom.read_file(ospj(dcm_folder, dcm_path))
@@ -92,13 +92,13 @@ def ReadDcmSequencePydicom(dcm_folder, norm=True):
     return slices
 
 
-__all__ = [ReadImageSequenceSitk]
+
 
 
 if __name__ == '__main__':
     data_folder = 'Data/RAW/002'
 
     arr = np.array(ReadDcmSequencePydicom(data_folder))
-    np.save(ospj('Data/RAW/npydata', '002'), arr)
+    # np.save(ospj('Data/RAW/npydata', '002'), arr)
 
     print("hello-world")
