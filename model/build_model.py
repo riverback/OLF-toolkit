@@ -3,9 +3,10 @@ from model.Semantic_Segmentation.U_Net.unet import U_Net, AttU_Net
 from model.Semantic_Segmentation.DeepLab.deeplabv3 import deeplabv3_resnet50, deeplabv3_resnet101
 from model.Semantic_Segmentation.TransUNet.model.transunet import build_transunet
 
+from model.Backbone.vgg import vgg16_bn, vgg19_bn
 from model.Backbone.resnet import resnet50, resnet101, resnet152
 
-MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101', 'TransUNet', 'AttU_Net', 'ResNet50', 'ResNet101', 'ResNet152']
+MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101', 'TransUNet', 'AttU_Net', 'ResNet50', 'ResNet101', 'ResNet152', 'VGG16', 'VGG19']
 
 def build_model(config) -> nn.Module:
     if config.model not in MODEL_LIST:
@@ -29,6 +30,10 @@ def build_model(config) -> nn.Module:
         model = resnet101(config.image_channels, config.output_channels)
     elif config.model == 'ResNet152':
         model = resnet152(config.image_channels, config.output_channels)
+    elif config.model == 'VGG16':
+        model = vgg16_bn(config.image_channels, config.output_channels)
+    elif config.model == 'VGG19':
+        model = vgg19_bn(config.image_channels, config.output_channels)
     else:
         ...
         

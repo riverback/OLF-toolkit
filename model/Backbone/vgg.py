@@ -69,14 +69,14 @@ def _vgg(cfg: str, batch_norm: bool, in_channels: int, num_classes, **kwargs: An
     return model
 
 
-def vgg16(num_classes, **kwargs):
-    return _vgg("D", False, num_classes, **kwargs)
+def vgg16(in_channels, num_classes, **kwargs):
+    return _vgg("D", False, in_channels, num_classes, **kwargs)
 
-def vgg16_bn(num_classes, **kwargs):
-    return _vgg("D", True, num_classes, **kwargs)
+def vgg16_bn(in_channels, num_classes, **kwargs):
+    return _vgg("D", True, in_channels, num_classes, **kwargs)
 
-def vgg19(num_classes, **kwargs):
-    return _vgg("E", False, num_classes, **kwargs)
+def vgg19(in_channels, num_classes, **kwargs):
+    return _vgg("E", False, in_channels, num_classes, **kwargs)
 
-def vgg19_bn(num_classes, **kwargs):
-    return _vgg("E", False, num_classes, **kwargs)
+def vgg19_bn(in_channels, num_classes, **kwargs):
+    return _vgg("E", False, in_channels, num_classes, **kwargs)
