@@ -230,7 +230,10 @@ class Classify_Dataset(data.Dataset):
 
         if self.mode == 'train':
             for index in range(len(self.Data)):
+                flag = False
                 image, label_encode, label = self.Data[index]
+                if label != [0]: 
+                    flag = True
                 image, label_encode, label = torch.tensor(image), torch.tensor(label_encode), torch.tensor(label)
                 image = image.unsqueeze(0).type(torch.FloatTensor)                                
 
@@ -245,15 +248,15 @@ class Classify_Dataset(data.Dataset):
                     image= Transform(image)
                 self.Data[index] = [image, label_encode, label]
                 
-                
-                image_ = image.clone().detach()
+                if flag:
+                    image_ = image.clone().detach()
 
-                Transform = []
-                RotationRange = random.randint(-10, 10)
-                Transform.append(T.RandomRotation((RotationRange, RotationRange)))
-                Transform.append(T.Resize((self.image_size, self.image_size)))
-                Transform = T.Compose(Transform)
-                self.Data.append([Transform(image_), label_encode, label])
+                    Transform = []
+                    RotationRange = random.randint(-10, 10)
+                    Transform.append(T.RandomRotation((RotationRange, RotationRange)))
+                    Transform.append(T.Resize((self.image_size, self.image_size)))
+                    Transform = T.Compose(Transform)
+                    self.Data.append([Transform(image_), label_encode, label])
 
         else:
             for index in range(len(self.Data)):
@@ -271,6 +274,9 @@ class Classify_Dataset(data.Dataset):
                     Transform = T.Compose(Transform)
                     image= Transform(image)
                 self.Data[index] = [image, label_encode, label]
+
+        if len(self.Data) % 2 != 0:
+            self.Data = self.Data[:-1]
 
         print(f"{self.mode} Dataset, {self.__len__()} Images")
 
@@ -324,7 +330,7 @@ class Classify_XY_Dataset(object):
 
 
         data_cnt = len(self.Data)
-        split_train, split_val = int(0.33*data_cnt), int(0.67*data_cnt)
+        split_train, split_val = int(0.5*data_cnt), int(0.99*data_cnt)
 
         self.DataPackage = {
             'train': self.Data[:split_train],
