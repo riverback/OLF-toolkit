@@ -217,7 +217,7 @@ class OLF_SEG_Dataset(object):
         return arr * contraster_factor + brightness_factor
 
 class Classify_Dataset(data.Dataset):
-    def __init__(self, mode, Data: List, std, mean):
+    def __init__(self, mode, Data: List, std=None, mean=None):
         super().__init__()
         
         self.mode = mode
@@ -246,7 +246,7 @@ class Classify_Dataset(data.Dataset):
                 self.Data[index] = [image, label_encode, label]
                 
                 
-                image_ = deepcopy(image)
+                image_ = image.clone().detach()
 
                 Transform = []
                 RotationRange = random.randint(-10, 10)
@@ -272,10 +272,15 @@ class Classify_Dataset(data.Dataset):
                     image= Transform(image)
                 self.Data[index] = [image, label_encode, label]
 
+        print(f"{self.mode} Dataset, {self.__len__()} Images")
+
     def __getitem__(self, index):
         image, label_encode, label = self.Data[index]
 
         return image, label_encode, label
+
+    def __len__(self):
+        return len(self.Data)
         
 
 class Classify_XY_Dataset(object):
@@ -302,7 +307,8 @@ class Classify_XY_Dataset(object):
         self.Data = []
 
         for i in range(len(self.GT_paths)):
-            label_f = open(self.GT_paths[i], 'r')
+            f = open(self.GT_paths[i], 'r')
+            label_f = f.readlines()
             dcm_data = ReadDcmSequence_XY_Pydicom(self.RAW_paths[i])
 
             for index in range(dcm_data.shape[0]):
@@ -312,9 +318,10 @@ class Classify_XY_Dataset(object):
                 dcm = dcm_data[index]
                 self.Data.append([dcm, label_encode, label])
 
-            label_f.close()
+            f.close()
 
-        self.Data = random.shuffle(self.Data)
+        random.shuffle(self.Data)
+
 
         data_cnt = len(self.Data)
         split_train, split_val = int(0.33*data_cnt), int(0.67*data_cnt)
@@ -328,8 +335,8 @@ class Classify_XY_Dataset(object):
         self._aug_train()
 
         self.train_Dataset = Classify_Dataset(mode='train', Data=self.DataPackage['train'], std=config.std, mean=config.mean)
-        self.val_Dataset = Classify_Dataset(mode='val', data=self.DataPackage['val'])
-        self.test_Dataset = Classify_Dataset(mode='test', data=self.DataPackage['test'])
+        self.val_Dataset = Classify_Dataset(mode='val', Data=self.DataPackage['val'])
+        self.test_Dataset = Classify_Dataset(mode='test', Data=self.DataPackage['test'])
 
 
     def _aug_train(self):
@@ -394,7 +401,7 @@ class Classify_XY_Dataset(object):
             1 - olf
             2 - do
         """
-        label_encoded = torch.zeors([3])
+        label_encoded = torch.zeros([3])
         label_encoded[label] = float(label)
 
         return label_encoded

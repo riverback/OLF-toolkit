@@ -7,7 +7,7 @@ import cv2
 import nibabel as nib
 from os.path import join as ospj
 
-from dcmutils import load_scan, normalize_minmax, get_pixels_hu
+from datasets.dcmutils import load_scan, normalize_minmax, get_pixels_hu
 
 
 def ReadDcmSequence_XY_Pydicom(dcm_folder, norm=True):
