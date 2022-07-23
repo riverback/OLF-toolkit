@@ -214,7 +214,7 @@ class Trainer(object):
         PC /= (batch_idx + 1)
         SP /= (batch_idx + 1)
         Recall /= (batch_idx + 1)
-        sum_score = (acc + DC + F1 + PC + SP + Recall) / 6.
+        sum_score = (acc + DC + F1 + PC + SP) / 5.
         print('''
             [Accuracy]:     {:.4f}
             [Precision]:    {:.4f}
@@ -225,13 +225,13 @@ class Trainer(object):
             [Net-score]:    {:.4f}
             '''.format(acc, PC, SP, Recall, F1, DC, sum_score))
 
-        writer.add_scalar('train-acc', acc, epoch)
-        writer.add_scalar('train-DC', DC, epoch)
-        writer.add_scalar('train-F1', F1, epoch)
-        writer.add_scalar('train-PC', PC, epoch)
-        writer.add_scalar('train-SP', SP, epoch)
-        writer.add_scalar('train-Recall', Recall, epoch)
-        writer.add_scalar('train-score', sum_score, epoch)
+        writer.add_scalar('val-acc', acc, epoch)
+        writer.add_scalar('val-DC', DC, epoch)
+        writer.add_scalar('val-F1', F1, epoch)
+        writer.add_scalar('val-PC', PC, epoch)
+        writer.add_scalar('val-SP', SP, epoch)
+        writer.add_scalar('val-Recall', Recall, epoch)
+        writer.add_scalar('val-score', sum_score, epoch)
 
         return sum_score
 
@@ -315,7 +315,7 @@ class Trainer(object):
             PC /= (batch_idx + 1)
             SP /= (batch_idx + 1)
             Recall /= (batch_idx + 1)
-            sum_score = (acc + DC + F1 + PC + SP + Recall) / 6.
+            sum_score = (acc + DC + F1 + PC + SP) / 5.
 
             if sum_score > best_score_for_ReduceLROnPlateau:
                 best_score_for_ReduceLROnPlateau = sum_score
