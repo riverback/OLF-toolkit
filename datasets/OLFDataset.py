@@ -407,7 +407,7 @@ class Classify_XY_Dataset(object):
             1 - olf
             2 - do
         """
-        label_encoded = torch.zeros([3])
+        label_encoded = np.zeros([3])
         label_encoded[label] = float(label)
 
         return label_encoded
