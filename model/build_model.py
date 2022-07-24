@@ -4,7 +4,7 @@ from model.Semantic_Segmentation.DeepLab.deeplabv3 import deeplabv3_resnet50, de
 from model.Semantic_Segmentation.TransUNet.model.transunet import build_transunet
 
 from model.Backbone.vgg import vgg16_bn, vgg19_bn
-from model.Backbone.resnet import resnet50, resnet101, resnet152
+from model.Backbone.resnet import resnet50, resnet101, resnet152, resnet34, resnet18
 
 MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101', 'TransUNet', 'AttU_Net', 'ResNet50', 'ResNet101', 'ResNet152', 'VGG16', 'VGG19']
 
@@ -24,6 +24,10 @@ def build_model(config) -> nn.Module:
         model = deeplabv3_resnet101(config.image_channels, config.output_channels)
     elif config.model == 'TransUNet':
         model = build_transunet(config.vit_name, n_classes=config.output_channels)
+    elif config.model == 'ResNet18':
+        model = resnet18(config.image_channels, config.output_channels)
+    elif config.model == 'ResNet34':
+        model = resnet34(config.image_channels, config.output_channels)
     elif config.model == 'ResNet50':
         model = resnet50(config.image_channels, config.output_channels)
     elif config.model == 'ResNet101':
