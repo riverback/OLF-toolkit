@@ -25,3 +25,4 @@ Data_Label_vis
 .vscode/*
 run_train.sh
 run_classify.sh
+png_resized/*

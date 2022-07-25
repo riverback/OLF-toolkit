@@ -2,12 +2,13 @@
 生成用于横断面分类+CAM机器视觉的数据
 """
 
+import os
 import numpy as np
 import cv2
 import nibabel as nib
 from os.path import join as ospj
-
-from datasets.dcmutils import load_scan, normalize_minmax, get_pixels_hu
+from dcmutils import load_scan, normalize_minmax, get_pixels_hu
+# from datasets.dcmutils import load_scan, normalize_minmax, get_pixels_hu
 
 
 def ReadDcmSequence_XY_Pydicom(dcm_folder, norm=True):
@@ -52,7 +53,7 @@ def generate_class3_label(dcm_folder, label_path, label_classify_xy_path='label_
     1 - olf
     2 - do
     """
-
+    
     with open(output_path, mode='w') as f:
         for z in range(labels.shape[0]):
             if labels[z, :, :].max() in DO_Label_Value:
@@ -66,6 +67,55 @@ def generate_class3_label(dcm_folder, label_path, label_classify_xy_path='label_
     
 
 
+def resize_ori_image_XY(dcm_folder, label_path, DO_Label_Value=[], folder='001'):
+    dcms = ReadDcmSequence_XY_Pydicom(dcm_folder)
+    labels = ReadNiiLabel(label_path)
+    output_folder = 'png_resized'
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    output_folder = ospj('png_resized', folder)
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+
+    labels[labels > 0] = 1
+
+    w, h = 256, 256
+    
+
+    for n in range(dcms.shape[0]):
+        dcm = dcms[n]
+        if dcm.shape[0] != dcm.shape[1]:
+            raise ValueError("dcm is not a square with same w and h")
+        png_resized = np.zeros([w, h])
+        save_path = os.path.join(output_folder, '{:05d}IMG.png'.format(n))
+        if labels[n].max() > 0:
+            position = labels[n].argmax()
+            x = position // labels[n].shape[0] - 175
+            y = position % labels[n].shape[0] - 100
+            if x + w > labels[n].shape[0]:
+                x = labels[n].shape[0] - 224
+            if y + h > labels[n].shape[1]:
+                y = labels[n].shape[1] - 224
+        else:
+            x = 100
+            y = 150
+        
+        x = 135
+        y = 125
+
+        png_resized = dcm[x:x+w, y:y+w]
+
+        if png_resized.max() <= 1.:
+            png_resized = (normalize_minmax(png_resized) * 255).astype(np.uint8)
+
+        cv2.imwrite(save_path, png_resized)
+
+
+
+
+    
+
 
 if __name__ == '__main__':
 
@@ -73,14 +123,16 @@ if __name__ == '__main__':
     label_path = 'Data/GT/001/Label.nii.gz'
     dcm_folder = 'Data/RAW/001'
     label_classify_xy_path = '001.txt'
-    generate_class3_label(dcm_folder, label_path, label_classify_xy_path, DO_Spine)
+    resize_ori_image_XY(dcm_folder, label_path, DO_Spine, '001')
+    # generate_class3_label(dcm_folder, label_path, label_classify_xy_path, DO_Spine)
 
-
+    
     DO_Spine = [18.0]
     label_path = 'Data/GT/002/Label.nii.gz'
     dcm_folder = 'Data/RAW/002'
     label_classify_xy_path = '002.txt'
-    generate_class3_label(dcm_folder, label_path, label_classify_xy_path, DO_Spine)
-
+    # resize_ori_image_XY(dcm_folder, label_path, DO_Spine, '002')
+    # generate_class3_label(dcm_folder, label_path, label_classify_xy_path, DO_Spine)
     
+   
 
