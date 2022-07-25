@@ -63,12 +63,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--model', type=str, default='ResNet50')
+    parser.add_argument('--model', type=str, default='ResNet18')
     parser.add_argument('--image_channels', type=int, default=1)
     parser.add_argument('--output_channels', type=int, default=3)
     parser.add_argument('--cuda_idx', type=str, default='7')
 
-    parser.add_argument('--checkpoint_path', type=str, default='experiments/ResNet50-CosineAnnealingLR-epoch80/checkpoints/checkpoint_70.pth')
+    parser.add_argument('--checkpoint_path', type=str, default='experiments/ResNet18-setWindow/checkpoints/checkpoint_best.pth')
 
     config = parser.parse_args()
 
@@ -81,12 +81,15 @@ if __name__ == '__main__':
     model.load_state_dict(checkpoint['model_state_dict'], strict=True)
     model.eval()
 
-    cam_extractor = GradCAM(model=model, target_layer='layer4')
+    cam_extractor = CAM(model=model, target_layer='layer4')
 
-    vis_folder = ospj('vis', 'cam', '002')
+    vis_folder = ospj('vis', 'cam', 'resnet18_after_set_window_epoch_best')
     wrong_folder = ospj(vis_folder, 'wrong')
     right_folder = ospj(vis_folder, 'right')
     
+    if not os.path.exists(vis_folder):
+        os.makedirs(vis_folder)
+
     if not os.path.exists(wrong_folder):
         os.makedirs(wrong_folder)
 
@@ -96,7 +99,7 @@ if __name__ == '__main__':
 
     Data_root = 'Data'
 
-    data_index = '002'
+    data_index = '001'
 
     label_path = ospj(Data_root, 'GT', data_index, 'Label_class3_xy.txt')
     image_path = ospj(Data_root, 'RAW', data_index)
