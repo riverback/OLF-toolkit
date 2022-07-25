@@ -13,7 +13,7 @@ from copy import deepcopy
 
 from datasets.seg_olf_slice_info import OLF_SLICE
 from datasets.dcmutils import normalize_minmax
-from datasets.prepare_classify_and_cam import ReadDcmSequence_XY_Pydicom
+from datasets.prepare_classify_and_cam import ReadDcmSequence_XY_Pydicom, ReadPngSequence_XY_CV2
 
 
 class OLFDataset(data.Dataset):
@@ -224,7 +224,7 @@ class Classify_Dataset(data.Dataset):
         self.std = std
         self.mean = mean
         
-        self.image_size = 512
+        self.image_size = 256
         
         self.Data = deepcopy(Data)
 
@@ -289,6 +289,7 @@ class Classify_Dataset(data.Dataset):
         return len(self.Data)
         
 
+
 class Classify_XY_Dataset(object):
     def __init__(self, config):
         super().__init__()     
@@ -298,7 +299,8 @@ class Classify_XY_Dataset(object):
 
         self.root = config.olf_root
         self.GT_root = ospj(self.root, 'GT')
-        self.RAW_root = ospj(self.root, 'RAW')
+        self.RAW_root = 'png_resized'
+        # self.RAW_root = ospj(self.root, 'RAW')
 
         self.GT_folder_paths = [ospj(self.GT_root, path) for path in  os.listdir(self.GT_root)] # 001 002 ...
         # self.GT_folder_paths.sort()
@@ -315,7 +317,9 @@ class Classify_XY_Dataset(object):
         for i in range(len(self.GT_paths)):
             f = open(self.GT_paths[i], 'r')
             label_f = f.readlines()
-            dcm_data = ReadDcmSequence_XY_Pydicom(self.RAW_paths[i])
+            # dcm_data = ReadDcmSequence_XY_Pydicom(self.RAW_paths[i])
+            dcm_data = ReadPngSequence_XY_CV2(self.RAW_paths[i])
+            print(dcm_data.shape)
 
             for index in range(dcm_data.shape[0]):
                 label = int(label_f[index].strip('\n').split()[-1])

@@ -7,8 +7,8 @@ import numpy as np
 import cv2
 import nibabel as nib
 from os.path import join as ospj
-from dcmutils import load_scan, normalize_minmax, get_pixels_hu
-# from datasets.dcmutils import load_scan, normalize_minmax, get_pixels_hu
+# from dcmutils import load_scan, normalize_minmax, get_pixels_hu
+from datasets.dcmutils import load_scan, normalize_minmax, get_pixels_hu
 
 
 def ReadDcmSequence_XY_Pydicom(dcm_folder, norm=True):
@@ -26,6 +26,23 @@ def ReadDcmSequence_XY_Pydicom(dcm_folder, norm=True):
     cv2.imwrite(out_path, hu_scans[0, :, :])
     '''
     return hu_scans
+
+def ReadPngSequence_XY_CV2(folder, norm=True):
+    if '001' in folder:
+        cnt = 601
+    elif '002' in folder:
+        cnt = 528
+
+    scans = np.zeros([cnt, 256, 256])
+    for i in range(cnt):
+        png_path = ospj(folder, '{:05d}IMG.png'.format(i))
+        png = cv2.imread(png_path, cv2.IMREAD_GRAYSCALE)
+        scans[i] = png
+    
+    if scans.max() > 1:
+        scans = normalize_minmax(scans)
+
+    return scans
 
 
 def ReadNiiLabel(label_path):
