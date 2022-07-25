@@ -63,6 +63,19 @@ def get_pixels_hu(scans):
 
     image += np.int16(intercept)
 
+    # set the window width and window level for CT images
+    winwidth, wincenter = 500, 200
+    min_v = (2 * wincenter - winwidth) / 2.0 + 0.5
+    max_v = (2 * wincenter + winwidth) / 2.0 + 0.5
+    dFactor = 255.0 / (max_v - min_v)
+
+    image = ((image - min_v) * dFactor).astype(np.int16)
+
+    min_index = image < 0
+    image[min_index] = 0
+    max_index = image > 255
+    image[max_index] = 255
+
     return np.array(image, dtype=np.int16)
 
 
