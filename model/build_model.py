@@ -25,19 +25,19 @@ def build_model(config) -> nn.Module:
     elif config.model == 'TransUNet':
         model = build_transunet(config.vit_name, n_classes=config.output_channels)
     elif config.model == 'ResNet18':
-        model = resnet18(config.image_channels, config.output_channels)
+        model = resnet18(config.image_channels, config.output_channels, config.down)
     elif config.model == 'ResNet34':
-        model = resnet34(config.image_channels, config.output_channels)
+        model = resnet34(config.image_channels, config.output_channels, config.down)
     elif config.model == 'ResNet50':
-        model = resnet50(config.image_channels, config.output_channels)
+        model = resnet50(config.image_channels, config.output_channels, config.down)
     elif config.model == 'ResNet101':
-        model = resnet101(config.image_channels, config.output_channels)
+        model = resnet101(config.image_channels, config.output_channels, config.down)
     elif config.model == 'ResNet152':
-        model = resnet152(config.image_channels, config.output_channels)
+        model = resnet152(config.image_channels, config.output_channels, config.down)
     elif config.model == 'VGG16':
-        model = vgg16_bn(config.image_channels, config.output_channels)
+        model = vgg16_bn(config.image_channels, config.output_channels, config.down)
     elif config.model == 'VGG19':
-        model = vgg19_bn(config.image_channels, config.output_channels)
+        model = vgg19_bn(config.image_channels, config.output_channels, config.down)
     else:
         ...
         

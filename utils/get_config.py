@@ -42,6 +42,8 @@ def getConfig():
                         help='olf ct data is 1-channel')
     parser.add_argument('--output_channels', type=int, default=3, 
                         help='olf-seg-only=1, olf-do-seg=3')
+    parser.add_argument('--down', type=str, default='True',
+                        help='downsample in resnet')
     
     # Traing Parameter Settings
     parser.add_argument('--num_epochs', type=int, default=10, 
@@ -84,5 +86,5 @@ def getConfig():
 
     
     config = parser.parse_args()
-    
+        
     return config
