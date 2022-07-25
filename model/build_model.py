@@ -6,7 +6,7 @@ from model.Semantic_Segmentation.TransUNet.model.transunet import build_transune
 from model.Backbone.vgg import vgg16_bn, vgg19_bn
 from model.Backbone.resnet import resnet50, resnet101, resnet152, resnet34, resnet18
 
-MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101', 'TransUNet', 'AttU_Net', 'ResNet50', 'ResNet101', 'ResNet152', 'VGG16', 'VGG19']
+MODEL_LIST = ['U_Net', 'DeepLabV3_ResNet50', 'DeepLabV3_ResNet101', 'TransUNet', 'AttU_Net', 'ResNet18', 'ResNet34', 'ResNet50', 'ResNet101', 'ResNet152', 'VGG16', 'VGG19']
 
 def build_model(config) -> nn.Module:
     if config.model not in MODEL_LIST:
